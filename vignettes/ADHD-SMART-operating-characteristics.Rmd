@@ -1,0 +1,419 @@
+---
+title: "ADHD-SMART-operating-characteristics"
+output: 
+  rmarkdown::html_vignette:
+    toc: TRUE
+vignette: >
+  %\VignetteIndexEntry{ADHD-SMART-operating-characteristics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, include=FALSE}
+library(simCATIEdata)
+library(tidyverse)
+
+```
+
+# Operating Characteristics Summary
+
+For EOS outcome
+
+-   First-stage:
+    -   BMOD is marginally better
+
+    -   IF Prior Med, MED is better (see 1st stage interaction plot)
+-   Second-stage (among non-responders only):
+    -   AUG is marginally better
+
+    -   IF a1 = MED, INT is better; IF a1 = BMOD, AUG is better
+
+    -   deeply tailored: IF Non-adherent, AUG always better, likewise, IF adherent, INT is better (see 2nd stage interaction plot)
+-   Associations:
+    -   Baseline: Odd, Severity neg assoc with Y2; Race pos associated with Y2
+
+    -   Intermediate:
+
+        -   Responder pos assoc with Y2
+
+        -   Response is pos associated with MED, and neg associated with BMOD IF Prior Med
+
+        -   Adherence is pos associated with MED IF Prior Med
+
+        -   Non-response time (ET) is uniform random
+-   Y0 neg associated with Odd and Severity
+-   Y1 slight increase from baseline; pos accociated with MED only
+
+## Linear DGP Model
+
+$$
+Y_{0,i}(a_1, a_2) = 2 - 0.2\tilde{odd}_i - 0.3 \tilde{severity}_i + \epsilon_i
+$$
+
+$$
+Y_{1,i}(a_1, a_2) = 2.5 - 0.3a_1 + 0.4U_i + \epsilon_i
+$$
+
+$$
+Y_{2,i}(a_1, a_2) = 3 - 0.3\bar{odd}_i - 0.3\bar{severity}_i + 0*\bar{priormed} + 0.5\bar{race}_i + \\
+(0.3 - 1.4\tilde{priormed}_i)a_1 + \\
+0.8\tilde{R} + 1 \tilde{Adh} \\
++(1-R)(-0.3 + 0.1a_1 + 1.2Adh_c)a_2 + 0.4U_i + \epsilon_i
+$$
+
+# Import Data
+```{r}
+set.seed(2023-01-01)
+
+# Generate adhd
+adhdObj <- simADHDsmart(N=150) #original dataset N=150
+adhd.raw <- adhdObj$data
+trueDTRmeans <- adhdObj$DTRmeans
+
+# Fill NA with zero
+adhd <- adhd.raw
+adhd[adhd$R == 1, "event_time"] <- 0
+adhd[adhd$R == 1, "A2"] <- 0
+```
+
+```{r}
+# Manipulate data.frame
+
+# Grand mean center covariates
+adhd.c <- adhd %>% mutate(across(c(2:5, adherence, event_time),  ~ .x - mean(.x, na.rm = TRUE), .names = "{.col}.c"), )
+
+# Center variables only among non-responders
+adhd.nr.c <- adhd %>% filter(R == 0) %>%
+  mutate(across(.cols = c(2:5, event_time, adherence), ~ .x - mean(.x), .names = "{.col}.c"))
+
+# Long format for plotting longitudinal outcome
+adhd.long <- pivot_longer(adhd, cols = c(Y0, Y1, Y2), names_to = "stage", 
+                          names_prefix = "[Y]",
+                          names_transform = as.integer,
+                          values_to = "Y")
+
+```
+
+## Some Plots
+
+```{r}
+adhd.long %>% ggplot(aes(x = factor(stage), y = Y, fill =  factor(stage))) +
+  geom_violin(draw_quantiles = 0.5) +
+  labs(title = "Longitudinal Outcome", x = "Stage", y = "School Perfomance")
+
+adhd.long %>% filter(stage == 2) %>% 
+  ggplot(aes(x = factor(stage), y = Y, fill =  interaction(A1, A2, sep = " "))) +
+  geom_violin(draw_quantiles = 0.5) +
+  labs(title = "EOS Outcome by Cell", x = "Stage", y = "School Perfomance") +
+  scale_fill_discrete("A1, A2")
+
+```
+
+# Module 4a / DEMO 1
+
+Main Effects
+
+### Response Rate
+
+```{r}
+xtabs(~ R, adhd) %>% prop.table()
+xtabs( ~ A1 + R, adhd) %>% prop.table()
+xtabs( ~ R + A2, adhd) %>% prop.table()
+
+# test for Responder difference
+chisq.test(xtabs( ~ A1 + R, adhd), correct = FALSE)
+
+modelR <- adhd.c %>% glm(R ~ A1 + odd.c + severity.c + priormed.c + race.c, 
+                         family = binomial, data = .)
+summary(modelR)
+
+```
+
+### First-stage Main Effects
+
+```{r fig.cap="Longitudinal Outcome by first-stage treatment"}
+# plot
+adhd.long %>% filter(stage > 0) %>% 
+  ggplot(aes(x = factor(stage), y = Y, fill =  factor(A1))) +
+  geom_violin(draw_quantiles = 0.5) +
+  labs(title = "Longitudinal Outcome by First-Stage Tx", x = "Stage", y = "School Perfomance") +
+  scale_fill_discrete("A1", labels = c("-1 MED", "1 BMOD"))
+```
+
+```{r}
+# Fit model
+library(geepack)
+
+model1 <- adhd.c %>% geeglm(Y2 ~ A1 + odd.c + severity.c + priormed.c + race.c, 
+                            id = ID, data = .)
+summary(model1)
+
+estimate(model1,
+         rbind("Mean Y under BMOD"   = c(1,  1, 0, 0, 0, 0),
+               "Mean Y under MED"    = c(1, -1, 0, 0, 0, 0),
+               "Between groups diff" = c(0,  2, 0, 0, 0, 0))) %>% print()
+
+```
+
+### Second-stage Among Non-responders
+
+```{r}
+# Plots of second stage
+adhd.long %>% filter(stage == 2) %>% 
+  ggplot(aes(x = factor(stage), y = Y, fill =  factor(A2))) +
+  geom_violin(draw_quantiles = 0.5) +
+  labs(title = "EOS Outcome by Second-Stage Tx", x = "Stage", y = "School Perfomance") +
+  scale_fill_discrete("A2", labels = c("-1 AUG", "Responder", "1 INT"))
+
+```
+
+```{r}
+
+# Covariates centered among non-responders
+model2 <- adhd.nr.c %>% geeglm(Y2 ~ A2 + odd.c + severity.c + priormed.c + 
+                                 race.c + event_time.c + adherence.c, id = ID, data = .)
+summary(model2)
+
+estimate(model2,
+         rbind("Mean Y w/INTENSIFY tactic"   = c(1,  1, rep(0, 6)),
+               "Mean Y w/AUGMENT tactic"     = c(1, -1, rep(0, 6)),
+               "Between groups difference"   = c(0,  2, rep(0, 6)))) %>% print()
+```
+
+# Module 4b / DEMO 2
+
+Compare all 4 AI using replication and weighting
+
+### Replicate and Weight
+
+```{r}
+# Replicate Responders, add A2 tx, bind non-responders
+# Use centered df
+adhd.rep <- adhd.c %>% filter(R == 1) %>% 
+  slice(rep(1:n(), each = 2)) %>% # Replicates
+  mutate(A2 = rep(c(-1, 1), length.out = n())) %>%
+  bind_rows(adhd.c %>% filter(R == 0))
+
+# Add weights
+adhd.rep <- adhd.rep %>% mutate(w = if_else(R == 1, 2, 4))
+
+
+```
+
+### Fit Marginal Model
+
+```{r}
+modelMM <- geeglm(Y2 ~ A1*A2, weights = w, id = ID, data = adhd.rep)
+summary(modelMM)
+
+# Careful we specify contrasts correctly (coeff in right order)
+estimate(modelMM,
+         rbind(
+           # These statements get the mean under each AI
+           "Mean Y: AI#1 (MED, AUGMENT)"    = c(1, -1, -1,  1),
+           "Mean Y: AI#2 (BMOD, AUGMENT)"   = c(1,  1, -1, -1),
+           "Mean Y: AI#3 (MED, INTENSIFY)"  = c(1, -1,  1, -1),
+           "Mean Y: AI#4 (BMOD, INTENSIFY)" = c(1,  1,  1,  1),
+           # These statements are to get all pairwise comparisons
+           "Diff: AI#1 - AI#2"              = c(0, -2,  0,  2),
+           "Diff: AI#1 - AI#3"              = c(0,  0, -2,  2),
+           "Diff: AI#1 - AI#4"              = c(0, -2, -2,  0),
+           "Diff: AI#2 - AI#3"              = c(0,  2, -2,  0),
+           "Diff: AI#2 - AI#4"              = c(0,  0, -2, -2),
+           "Diff: AI#3 - AI#4"              = c(0, -2,  0, -2))) %>% print()
+
+trueDTRmeans
+```
+
+### Marginal Model, adjust for baseline covariates
+
+```{r}
+modelMM.adj <- adhd.rep %>% geeglm(Y2 ~ A1*A2 + odd.c + severity.c + priormed.c + race.c, 
+                                   weights = w, id = ID, data = .)
+
+summary(modelMM.adj)
+
+# Careful we specify contrasts correctly
+estimate(modelMM.adj,
+         rbind("Mean Y: AI#1 (MED, AUGMENT)"    = c(1, -1, -1, rep(0,4),  1),
+               "Mean Y: AI#2 (BMOD, AUGMENT)"   = c(1,  1, -1, rep(0,4), -1),
+               "Mean Y: AI#3 (MED, INTENSIFY)"  = c(1, -1,  1, rep(0,4), -1),
+               "Mean Y: AI#4 (BMOD, INTENSIFY)" = c(1,  1,  1, rep(0,4),  1),
+               "Diff: AI#1 - AI#2"              = c(0, -2,  0, rep(0,4),  2),
+               "Diff: AI#1 - AI#3"              = c(0,  0, -2, rep(0,4),  2),
+               "Diff: AI#1 - AI#4"              = c(0, -2, -2, rep(0,4),  0),
+               "Diff: AI#2 - AI#3"              = c(0,  2, -2, rep(0,4),  0),
+               "Diff: AI#2 - AI#4"              = c(0,  0, -2, rep(0,4), -2),
+               "Diff: AI#3 - AI#4"              = c(0, -2,  0, rep(0,4), -2))) %>% print()
+
+trueDTRmeans
+```
+
+# Module 5 / DEMO 3
+
+### Moderators of Second-stage TX effects
+
+First-stage effects will be biased Why do we subset to only non-responders? We loose power adjusting for baseline and first-stage?
+
+```{r}
+# should we use the df with the coeff centered by non-responders?
+# do we interact with the centered adherence.c?
+model2s.c <- adhd.nr.c %>% geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
+                                  event_time.c + adherence.c + 
+                                    A1*A2 + A2:adherence.c,
+                                id = ID, data = .)
+summary(model2s.c) #gives robust SE
+```
+
+### Interaction Plot 2nd Stage
+
+```{r}
+library(emmeans)
+
+model2s <- adhd.nr.c %>% geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
+                                  event_time.c + adherence + 
+                                  A1*A2 + A2:adherence,
+                                id = ID, data = .)
+
+grid <- emmeans::ref_grid(model2s, cov.keep = c("A1","A2", "adherence"))
+grid
+
+em2 <- emmeans::emmeans(grid, ~ A1 + A2 | adherence) # This does not give a weighted grid!!!! use ref_grid or weights = "proportional"
+summary(em2)
+plot(em2)
+
+ep2 <- emmeans::emmip(em2, A1 + A2 ~ adherence, style = "factor")
+ep2$data %>% mutate(across(1:3, as.factor)) %>%
+  ggplot(aes(xvar, yvar, color = A1, linetype = A2, group = tvar)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual("A1", values = c("-1" = "red", "1" = "blue"), 
+                     labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
+  scale_linetype_manual("A2", values = c("-1" = 1,"1" = 3), 
+                        labels = c("-1" = "-1 AUG", "1" = "1 INT")) +
+  xlab("Adherence") +
+  ylab("School Performance") +
+  theme_bw()
+
+```
+
+### Q-learning
+
+control for optimal second-stage tactic
+
+```{r}
+# Using full dataset, centered first, then filtered to non-responders
+adhd.c.nr <- adhd.c %>% filter(R == 0)
+
+model2s <-  adhd.c.nr %>%
+  geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c + 
+           event_time + adherence + A1*A2 + A2:adherence, 
+         id = ID, data = .)
+
+adhd.c.nr.alt <- adhd.c.nr %>% mutate(A2 = -1 * A2)
+adhd.c.nr.opt <- adhd.c.nr
+
+adhd.c.nr.alt$Y2 <- predict(model2s, newdata = adhd.c.nr.alt) # predict response on counterfactual a2
+
+for (i in 1:nrow(adhd.c.nr.alt)) {
+  if (adhd.c.nr.alt$Y2[i] > adhd.c.nr.opt$Y2[i]) {
+    adhd.c.nr.opt[i, ] <- adhd.c.nr.alt[i, ] # assign optimal A2
+  }
+}
+
+# Combine Optimal non-responders with responders
+adhd.c.opt <- adhd.c %>% filter(R == 1) %>%
+  bind_rows(adhd.c.nr.opt)
+
+# Fit first-stage model controlling for second-stage
+model1s <- adhd.c.opt %>% geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
+                                   A1 + A1:priormed.c, id = ID, data = .)
+summary(model1s)
+
+
+```
+
+### Interaction plot 1st Stage
+
+```{r}
+grid <- emmeans::ref_grid(model1s, cov.keep = c("A1","priormed.c"))
+grid
+
+em1 <- emmeans::emmeans(model1s, ~ A1 | priormed.c, weights = "proportional")
+summary(em1)
+plot(em1)
+
+ep1 <- emmeans::emmip(em1, A1 ~ priormed.c, style = "factor")
+
+ep1 + scale_color_manual("A1", values = c("-1" = "red", "1" = "blue"), 
+                     labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
+  labs(x = "Levels of Prior Med", y = "School Performance") +
+  theme_bw()
+```
+
+TO DO: calculate mean of more deeply tailored AI
+
+```{r}
+# Can also calculate with lm and use sandwich package
+model2s <- adhd.nr.c %>% lm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
+                                  adherence.c + A1*A2 + A2:adherence.c,
+                                data = .)
+summary(model2s)
+sqrt(diag(sandwich::sandwich(model2s)))
+```
+
+### qlaci
+
+Need to implement qlaci package. Are we using?? I think there are some errors in the Q-learning demo...
+
+### Adjust for Time-varying Confounders (conditional model)
+
+Two-stage regression algorithm. SE errors need to be adjusted
+
+```{r}
+
+adhd.c$Rerand <- 1 - adhd.c$R
+
+# Response model
+fitR <- adhd.c %>% glm(R ~ odd.c + severity.c + priormed.c + race.c + A1 + adherence.c,
+                       family = binomial, data = .)
+#summary(fitR)
+
+# Add residuals to df
+adhd.c$R.resid <- residuals(fitR, "response")
+
+# Adherence model
+fitAdh <- adhd.c %>% glm(adherence ~  odd.c + severity.c + priormed.c + race.c + A1 + R,
+                       family = binomial, data = .)
+#summary(fitAdh)
+
+# Add residuals to df
+adhd.c$adherence.resid <- residuals(fitAdh, "response")
+
+# Fit main model
+fitCM <- adhd.c %>% lm(Y2 ~ A1*R.resid + Rerand:(A2/A1), 
+                       data = .)
+
+summary(fitCM)
+
+
+```
+
+### Moderator Analysis
+
+```{r}
+
+# Fit main model
+fitCM.mod <- adhd.c %>% lm(Y2 ~ A1*(R.resid + odd.c + severity.c + priormed.c + race.c) + adherence.resid + Rerand:(A2/(A1 + adherence.c)), data = .)
+
+summary(fitCM.mod)
+
+```
+

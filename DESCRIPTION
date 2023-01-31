@@ -1,0 +1,20 @@
+Package: simCATIEdata
+Title: Generate Synthetic SMART Data for CATIE 2023
+Version: 0.0.0.9000
+Authors@R: 
+    person("Mason", "Ferlic", , "mferlic@umich.edu", role = c("aut", "cre"))
+Description: Generates sythetic ADHD and AUTISM SMART data with desired operating characteristics.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports: 
+    dplyr,
+    magrittr
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Depends: 
+    R (>= 2.10)
+LazyData: true
