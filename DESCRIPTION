@@ -1,4 +1,4 @@
-Package: simCATIEdata
+Package: CATIE2023
 Title: Generate Synthetic SMART Data for CATIE 2023
 Version: 0.0.0.9000
 Authors@R: 
