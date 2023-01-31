@@ -18,3 +18,5 @@ VignetteBuilder: knitr
 Depends: 
     R (>= 2.10)
 LazyData: true
+URL: https://github.com/mferlic/simCATIEdata
+BugReports: https://github.com/mferlic/simCATIEdata/issues
