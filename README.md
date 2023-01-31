@@ -4,6 +4,8 @@
 # CATIE2023
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/mferlic/CATIE2023/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/mferlic/CATIE2023/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of CATIE2023 is to bundle the datasets and code used for the
