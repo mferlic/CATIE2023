@@ -3,6 +3,7 @@ title: "AUTSIM-SMART-operating-characteristics"
 output: 
   rmarkdown::html_vignette:
     toc: true
+    fig-width: 100%
 vignette: >
   %\VignetteIndexEntry{AUTSIM-SMART-operating-characteristics}
   %\VignetteEngine{knitr::rmarkdown}
@@ -45,16 +46,11 @@ $$
 # Import Data
 
 ```{r}
-set.seed(2023-01-21)
 
-# Generate autism
-autismObj <- simAUTISMsmart(N=200) #original dataset N=200
-autism.raw <- autismObj$data
-trueDTRmeans <- autismObj$DTRmeans
-
+autism <- CATIE2023::autism
+trueDTRmeans <- CATIE2023::autismDTRmeans
 
 # Fill NA with zero
-autism <- autism.raw
 autism[is.na(autism)] <- 0
 ```
 

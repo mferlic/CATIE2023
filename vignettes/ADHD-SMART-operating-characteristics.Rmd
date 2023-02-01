@@ -3,6 +3,7 @@ title: "ADHD-SMART-operating-characteristics"
 output: 
   rmarkdown::html_vignette:
     toc: TRUE
+    fig-width: 100%
 vignette: >
   %\VignetteIndexEntry{ADHD-SMART-operating-characteristics}
   %\VignetteEngine{knitr::rmarkdown}
@@ -74,15 +75,11 @@ $$
 
 # Import Data
 ```{r}
-set.seed(2023-01-01)
 
-# Generate adhd
-adhdObj <- simADHDsmart(N=150) #original dataset N=150
-adhd.raw <- adhdObj$data
-trueDTRmeans <- adhdObj$DTRmeans
+adhd <- CATIE2023::adhd
+trueDTRmeans <- CATIE2023::adhdDTRmeans
 
 # Fill NA with zero
-adhd <- adhd.raw
 adhd[adhd$R == 1, "event_time"] <- 0
 adhd[adhd$R == 1, "A2"] <- 0
 ```
@@ -364,14 +361,6 @@ ep1 + scale_color_manual("A1", values = c("-1" = "red", "1" = "blue"),
 
 TO DO: calculate mean of more deeply tailored AI
 
-```{r}
-# Can also calculate with lm and use sandwich package
-model2s <- adhd.nr.c %>% lm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
-                                  adherence.c + A1*A2 + A2:adherence.c,
-                                data = .)
-summary(model2s)
-sqrt(diag(sandwich::sandwich(model2s)))
-```
 
 ### qlaci
 
