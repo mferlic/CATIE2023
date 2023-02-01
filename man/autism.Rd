@@ -10,6 +10,7 @@ A data frame with 200 rows and 11 columns
 \item{ID}{numeric id}
 \item{O11}{baseline covariate; range 0 -- 80}
 \item{O12}{baseline covariate; range 0 -- 50}
+\item{Y0}{baseline score}
 \item{A1}{stage 1 treatment assignment. A1 = -1 if the first stage intervention included SGD, A2 = 1 if the first stage intervention did not include SGD}
 \item{R}{response status. R = 0 if participant did not respond to the first stage intervention; R = 1 if he or she responded.}
 \item{O21}{time-varying covariate; continuous}
