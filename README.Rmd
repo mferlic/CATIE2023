@@ -16,10 +16,11 @@ knitr::opts_chunk$set(
 # CATIE2023
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/mferlic/CATIE2023/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/mferlic/CATIE2023/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of CATIE2023 is to bundle the datasets and code used for the CATIE 2023 demo and practicum days.
+The goal of CATIE2023 is to bundle the data sets and code used for the
+CATIE 2023 demo and practicum days.
+
 
 ## Installation
 
@@ -32,11 +33,13 @@ devtools::install_github("mferlic/CATIE2023")
 
 ## Example
 
-This is a basic example which shows you how to access the ADHD dataset
+This is how you access the internal data sets
 
 ```{r example}
 library(CATIE2023)
 
-adhd <- CATIE2023::adhd
-```
+adhd <- CATIE2023::adhd # data.frame
 
+# read documentation
+?adhd
+```

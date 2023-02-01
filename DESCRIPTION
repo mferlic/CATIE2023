@@ -3,7 +3,7 @@ Title: Generate Synthetic SMART Data for CATIE 2023
 Version: 0.0.0.9000
 Authors@R: 
     person("Mason", "Ferlic", , "mferlic@umich.edu", role = c("aut", "cre"))
-Description: Generates sythetic ADHD and AUTISM SMART data with desired operating characteristics.
+Description: Contains the synthetic ADHD and AUTISM SMART data sets with the desired operating characteristics for use with CATIE 2023. Also contains the data generating code along with any helper fucntions for the demo days.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

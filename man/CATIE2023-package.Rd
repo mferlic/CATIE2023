@@ -6,7 +6,7 @@
 \alias{CATIE2023-package}
 \title{CATIE2023: Generate Synthetic SMART Data for CATIE 2023}
 \description{
-Generates sythetic ADHD and AUTISM SMART data with desired operating characteristics.
+Contains the synthetic ADHD and AUTISM SMART data sets with the desired operating characteristics for use with CATIE 2023. Also contains the data generating code along with any helper fucntions for the demo days.
 }
 \seealso{
 Useful links:

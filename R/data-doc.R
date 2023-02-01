@@ -1,3 +1,6 @@
+
+# ADHD data doc -----------------------------------------------------------
+
 #' ADHD Synthetic Dataset
 #'
 #' Dataset created for CATIE 2023
@@ -25,6 +28,11 @@
 #' @inheritSection simADHDsmart Operating Characteristics
 #' @source Pelham, et. al.
 "adhd"
+
+
+# Autism data doc ---------------------------------------------------------
+
+
 
 #' Autism Synthetic Dataset
 #'
