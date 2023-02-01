@@ -60,7 +60,7 @@
 #' -  Positive interaction for `AUG` if given `MED`, and `INT` if given `BMOD`
 #' -  IF adherent to first-stage, much better to `INT`; if non-adherent to first-stage, much better to `AUG`
 #'
-#' # Internal functions
+#' @details # Internal functions
 #' -  linearMult: takes a named vector of coefficients and a data.frame and creates the necessary design matrix to multiply and return the function values.
 #' - sampleProbitMean: generates observations from the posterior in order to empirically evaluate probability the integral.
 #' -  getMarginalMeans: takes the specified coefficients and returns the marginal means of the four embedded adaptive interventions, averaging over response and adherence.
