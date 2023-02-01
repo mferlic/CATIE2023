@@ -18,7 +18,11 @@ knitr::opts_chunk$set(
 
 ```{r setup, include=FALSE}
 library(CATIE2023)
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(geepack)
+library(emmeans)
 
 ```
 
@@ -149,9 +153,9 @@ adhd.long %>% filter(stage > 0) %>%
 
 ```{r}
 # Fit model
-library(geepack)
 
-model1 <- adhd.c %>% geeglm(Y2 ~ A1 + odd.c + severity.c + priormed.c + race.c, 
+
+model1 <- adhd.c %>%geepack::geeglm(Y2 ~ A1 + odd.c + severity.c + priormed.c + race.c, 
                             id = ID, data = .)
 summary(model1)
 
@@ -177,7 +181,7 @@ adhd.long %>% filter(stage == 2) %>%
 ```{r}
 
 # Covariates centered among non-responders
-model2 <- adhd.nr.c %>% geeglm(Y2 ~ A2 + odd.c + severity.c + priormed.c + 
+model2 <- adhd.nr.c %>%geepack::geeglm(Y2 ~ A2 + odd.c + severity.c + priormed.c + 
                                  race.c + event_time.c + adherence.c, id = ID, data = .)
 summary(model2)
 
@@ -210,7 +214,7 @@ adhd.rep <- adhd.rep %>% mutate(w = if_else(R == 1, 2, 4))
 ### Fit Marginal Model
 
 ```{r}
-modelMM <- geeglm(Y2 ~ A1*A2, weights = w, id = ID, data = adhd.rep)
+modelMM <-geepack::geeglm(Y2 ~ A1*A2, weights = w, id = ID, data = adhd.rep)
 summary(modelMM)
 
 # Careful we specify contrasts correctly (coeff in right order)
@@ -235,7 +239,7 @@ trueDTRmeans
 ### Marginal Model, adjust for baseline covariates
 
 ```{r}
-modelMM.adj <- adhd.rep %>% geeglm(Y2 ~ A1*A2 + odd.c + severity.c + priormed.c + race.c, 
+modelMM.adj <- adhd.rep %>%geepack::geeglm(Y2 ~ A1*A2 + odd.c + severity.c + priormed.c + race.c, 
                                    weights = w, id = ID, data = .)
 
 summary(modelMM.adj)
@@ -265,7 +269,7 @@ First-stage effects will be biased Why do we subset to only non-responders? We l
 ```{r}
 # should we use the df with the coeff centered by non-responders?
 # do we interact with the centered adherence.c?
-model2s.c <- adhd.nr.c %>% geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
+model2s.c <- adhd.nr.c %>%geepack::geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
                                   event_time.c + adherence.c + 
                                     A1*A2 + A2:adherence.c,
                                 id = ID, data = .)
@@ -275,9 +279,9 @@ summary(model2s.c) #gives robust SE
 ### Interaction Plot 2nd Stage
 
 ```{r}
-library(emmeans)
 
-model2s <- adhd.nr.c %>% geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
+
+model2s <- adhd.nr.c %>%geepack::geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
                                   event_time.c + adherence + 
                                   A1*A2 + A2:adherence,
                                 id = ID, data = .)
@@ -313,7 +317,7 @@ control for optimal second-stage tactic
 adhd.c.nr <- adhd.c %>% filter(R == 0)
 
 model2s <-  adhd.c.nr %>%
-  geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c + 
+ geepack::geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c + 
            event_time + adherence + A1*A2 + A2:adherence, 
          id = ID, data = .)
 
@@ -333,7 +337,7 @@ adhd.c.opt <- adhd.c %>% filter(R == 1) %>%
   bind_rows(adhd.c.nr.opt)
 
 # Fit first-stage model controlling for second-stage
-model1s <- adhd.c.opt %>% geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
+model1s <- adhd.c.opt %>%geepack::geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
                                    A1 + A1:priormed.c, id = ID, data = .)
 summary(model1s)
 

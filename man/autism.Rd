@@ -6,9 +6,17 @@
 \title{Autism Synthetic Dataset}
 \format{
 A data frame with 200 rows and 11 columns
-
 #' \describe{
 \item{ID}{numeric id}
+\item{O11}{baseline covariate; range 0 -- 80}
+\item{O12}{baseline covariate; range 0 -- 50}
+\item{A1}{stage 1 treatment assignment. A1 = -1 if the first stage intervention included SGD, A2 = 1 if the first stage intervention did not include SGD}
+\item{R}{response status. R = 0 if participant did not respond to the first stage intervention; R = 1 if he or she responded.}
+\item{O21}{time-varying covariate; continuous}
+\item{O22}{time-varying covariate; continuous}
+\item{Y1}{score at the end of stage 1}
+\item{A2}{stage 2 treatment assignment. Only non-responders (R=0) to  A1 = 1 entered the second stage of intervention and were re-randomized to either ADDING SGD (coded as -1) or INTENSIFYING the first stage intervention (coded as 1). For all others, A2 = NA.}
+\item{Y2}{end-of study score}
 }
 }
 \usage{
@@ -17,4 +25,20 @@ autism
 \description{
 Dataset created for CATIE 2023
 }
+\section{Operating Characteristics}{
+All baseline variables are grand mean centered. All moderators are centered conditional on the expectation given the past (residuals).
+\subsection{Default Structural Nested Mean Model:}{
+\subsection{Y1 after first-stage}{
+
+\deqn{Y_{1,i}(a_1, a_2) = 50 + 1a_1 + 4U_i + \epsilon_i}
+}
+
+\subsection{Y2 after second-stage}{
+
+\deqn{Y_{2,i}(a_1, a_2) = 60 + 0.3\bar{O}_{11} + (1 + 0.3\bar{O}_{11})a_1 + \\ 18\tilde{R} + 5\tilde{O}_{21} \\ +I(a_1 =1)(1-R)(-4 + 6\tilde{O}_{21})a_2 + 6U_i + \epsilon_i}
+}
+
+}
+}
+
 \keyword{datasets}

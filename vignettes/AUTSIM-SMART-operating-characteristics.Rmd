@@ -18,7 +18,11 @@ knitr::opts_chunk$set(
 
 ```{r setup, include=FALSE}
 library(CATIE2023)
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(geepack)
+library(emmeans)
 ```
 
 ## Linear DGP Model
@@ -123,9 +127,8 @@ autism.long %>% filter(stage > 0) %>%
 
 ```{r}
 # Fit model
-library(geepack)
 
-model1 <- autism.c %>% geeglm(Y2 ~ A1 + O11.c + O12.c, 
+model1 <- autism.c %>% geepack::geeglm(Y2 ~ A1 + O11.c + O12.c, 
                             id = ID, data = .)
 summary(model1)
 
@@ -151,7 +154,7 @@ autism.long %>% filter(stage == 2, Rerand == 1) %>%
 ```{r}
 
 # Covariates centered among non-responders
-model2 <- autism.nr.c %>% geeglm(Y2 ~ A2 + O11.c + O12.c + O21.c + O22.c, id = ID, data = .)
+model2 <- autism.nr.c %>% geepack::geeglm(Y2 ~ A2 + O11.c + O12.c + O21.c + O22.c, id = ID, data = .)
 summary(model2)
 
 estimate(model2,
@@ -225,7 +228,7 @@ trueDTRmeans
 First-stage effects will be biased Why do we subset to only non-responders? We loose power adjusting for baseline and first-stage?
 
 ```{r}
-model2s.c <- autism.nr.c %>% geeglm(Y2 ~ O11.c + O12.c + A2*(O21.c + O22.c),
+model2s.c <- autism.nr.c %>% geepack::geeglm(Y2 ~ O11.c + O12.c + A2*(O21.c + O22.c),
                                 id = ID, data = .)
 summary(model2s.c) #gives robust SE
 ```
@@ -233,9 +236,9 @@ summary(model2s.c) #gives robust SE
 ### Interaction Plot 2nd Stage for A1==1
 
 ```{r}
-library(emmeans)
 
-model2s <- autism.nr.c %>% geeglm(Y2 ~ O11.c + O12.c + A2*(O21 + O22),
+
+model2s <- autism.nr.c %>% geepack::geeglm(Y2 ~ O11.c + O12.c + A2*(O21 + O22),
                                 id = ID, data = .)
 
 grid <- emmeans::ref_grid(model2s, cov.keep = c("A2", "O21"))
@@ -259,7 +262,7 @@ control for optimal second-stage tactic
 autism.c.nr <- autism.c %>% filter(Rerand == 1)
 
 model2s <-  autism.c.nr %>%
-  geeglm(Y2 ~ O11.c + O12.c + A2*(O21 + O22), 
+  geepack::geeglm(Y2 ~ O11.c + O12.c + A2*(O21 + O22), 
          id = ID, data = .)
 
 autism.c.nr.alt <- autism.c.nr %>% mutate(A2 = -1 * A2)
@@ -278,7 +281,7 @@ autism.c.opt <- autism.c %>% filter(Rerand == 0) %>%
   bind_rows(autism.c.nr.opt)
 
 # Fit first-stage model controlling for second-stage
-model1s <- autism.c.opt %>% geeglm(Y2 ~ O11 + O12 + A1*(O11 + O12), id = ID, data = .)
+model1s <- autism.c.opt %>% geepack::geeglm(Y2 ~ O11 + O12 + A1*(O11 + O12), id = ID, data = .)
 summary(model1s)
 
 
@@ -327,7 +330,7 @@ autism.c$O21.resid <- residuals(fitO21, "response")
 autism.c$O22.resid <- residuals(fitO22, "response")
 
 # Fit main model
-fitCM <- autism.c %>% geeglm(Y2 ~ A1*R.resid + Rerand:A2, data = ., id = ID)
+fitCM <- autism.c %>% geepack::geeglm(Y2 ~ A1*R.resid + Rerand:A2, data = ., id = ID)
 
 summary(fitCM)
 
@@ -339,7 +342,7 @@ summary(fitCM)
 ```{r}
 
 # Fit main model
-fitCM.mod <- autism.c %>% geeglm(Y2 ~ A1*(R.resid + O21.resid + O22.resid) + Rerand:(A2/(O21.resid + O22.resid)), data = ., id = ID)
+fitCM.mod <- autism.c %>% geepack::geeglm(Y2 ~ A1*(R.resid + O21.resid + O22.resid) + Rerand:(A2/(O21.resid + O22.resid)), data = ., id = ID)
 
 summary(fitCM.mod)
 
