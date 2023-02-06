@@ -11,7 +11,7 @@ simADHDsmart(
   U.params = c(mu = 0, sd = 1),
   R.coef = c(-0.4, A1 = -0.1, `priormed:A1` = -0.2, U = 0.2),
   adherence.coef = c(-0.1, `priormed:A1` = -0.2, U = 0.1),
-  event_time.coef = NULL,
+  NRtime.coef = NULL,
   Y1.coef = c(2.5, A1 = -0.3, U = 0.1),
   Y2.baseline = c(3, odd = -0.3, severity = -0.4, priormed = 0, race = 0.5),
   Y2.tx1 = c(A1 = 0.3, `priormed:A1` = -1.4),
@@ -33,7 +33,7 @@ simADHDsmart(
 
 \item{adherence.coef}{A named vector specifying the linear \strong{probit model} coefficients for the probability of being adherent to first-stage treatment. Can be a function of any past variables.}
 
-\item{event_time.coef}{not implemented}
+\item{NRtime.coef}{not implemented}
 
 \item{Y1.coef}{A named vector of linear model coefficients specifying the first-stage treatment causal effect on \eqn{Y_1} school performance}
 
@@ -98,7 +98,7 @@ All baseline and moderator variable are grand mean centered. The nuisance terms 
 \itemize{
 \item \code{R}: positively associated with outcome
 \item \code{adherence}: positively associated with outcome
-\item \code{event-time}: or time to non-response has no effect
+\item \code{NRtime}: or time to non-response has no effect
 }
 }
 

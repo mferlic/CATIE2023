@@ -71,7 +71,7 @@ All baseline and moderator variable are grand mean centered. The nuisance terms 
 \itemize{
 \item \code{R}: positively associated with outcome
 \item \code{adherence}: positively associated with outcome
-\item \code{event-time}: or time to non-response has no effect
+\item \code{NRtime}: or time to non-response has no effect
 }
 }
 

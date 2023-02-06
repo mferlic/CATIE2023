@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.269">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Q-learning Demo</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="Q-learning_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Q-learning_files/libs/quarto-html/quarto.js"></script>
+<script src="Q-learning_files/libs/quarto-html/popper.min.js"></script>
+<script src="Q-learning_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Q-learning_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Q-learning_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Q-learning_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Q-learning_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Q-learning_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Q-learning_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Q-learning Demo</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="q-learning-demo-using-adhd-data" class="level2">
+<h2 class="anchored" data-anchor-id="q-learning-demo-using-adhd-data">Q-learning Demo using ADHD data</h2>
+<p>This file provides example R code to analyze *simulated* data that was generated to mimic data arising from the ADHD SMART study (PI: William Pelham). An accompanying handout (“ADHD Handout.pdf”) describes the variables in the data.</p>
+</section>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(CATIE2023)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(geepack)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(emmeans)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="load-data" class="level3">
+<h3 class="anchored" data-anchor-id="load-data">Load data</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>adhd <span class="ot">&lt;-</span> CATIE2023<span class="sc">::</span>adhd</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Fill NA with zero</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>adhd[<span class="fu">is.na</span>(adhd)] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Grand mean center all covariates</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>adhd.c <span class="ot">&lt;-</span> adhd <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(odd, severity, priormed, race, adherence, NRtime),  <span class="sc">~</span> .x <span class="sc">-</span> <span class="fu">mean</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">.names =</span> <span class="st">"{.col}.c"</span>), )</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter to non-responders, then center among non-responders</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>adhd.nr.c <span class="ot">&lt;-</span> adhd <span class="sc">%&gt;%</span> <span class="fu">filter</span>(R <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="at">.cols =</span> <span class="fu">c</span>(<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>, NRtime, adherence), <span class="sc">~</span> .x <span class="sc">-</span> <span class="fu">mean</span>(.x), <span class="at">.names =</span> <span class="st">"{.col}.c"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="examine-moderators-of-second-stage-treatment-effect" class="level2">
+<h2 class="anchored" data-anchor-id="examine-moderators-of-second-stage-treatment-effect">Examine moderators of second-stage treatment effect</h2>
+<p>Remember that Step 1 of Q-learning is to understand how intermediate outcomes can be used to make second-stage decisions about intensifying vs.&nbsp;augmenting. Investigating potential moderators in this way will help us tailor the second-stage intervention for non-responders based on the status of the participants up to the point of non-response. We are only able to investigate non-responders since those were the only individuals who were re-randomized. Because all responders in this study continued on their first-stage intervention, we are unable to assess whether a different tactic would be better for some responders.</p>
+<p>We’ll start by fitting a&nbsp;<strong>moderated regression model</strong>&nbsp;using the data from non-responders. The goal is to discover if we can use&nbsp;<em>the initial treatment</em>&nbsp;<code>a1</code> and&nbsp;<em>adherence to initial treatment</em> <code>adherence</code>&nbsp;to select a tactic for non-responders, adjusting for baseline covariates. The model is as follows:</p>
+<p><span class="math display">\[ \begin{gather} E[Y \mid \mathbf{X}, A_1, adherence, A_2, R = 0] = \beta_0 + \beta_1 odd_{cnr} + \beta_2 severity_{cnr} + \beta_3 priormed_{cnr} + \beta_4 race_{cnr}  \\+ \beta_5 A_{1} + \beta_6 adherence + \beta_7 A_2 + \beta_8 (A_2 \times A_1) + \beta_{9} (A_2 \times adherence)
+\end{gather}\]</span></p>
+<p>Pay particular attention to <span class="math inline">\(\beta_5\)</span>, <span class="math inline">\(\beta_6\)</span>, <span class="math inline">\(\beta_8\)</span>, and <span class="math inline">\(\beta_{9}\)</span>, as these represent the main effects and interactions (with second-stage intervention), respectively, of the two moderators we are interested in for this analysis. Let’s fit the model:</p>
+</section>
+<section id="fit-model-to-the-subset-of-non-responders" class="level2">
+<h2 class="anchored" data-anchor-id="fit-model-to-the-subset-of-non-responders">Fit model to the subset of non-responders</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use the data set that mean centers among non responders, this gives main effects</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>model2s <span class="ot">&lt;-</span> adhd.nr.c <span class="sc">%&gt;%</span>geepack<span class="sc">::</span><span class="fu">geeglm</span>(Y2 <span class="sc">~</span> odd.c <span class="sc">+</span> severity.c <span class="sc">+</span> priormed.c </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                                        <span class="sc">+</span> race.c <span class="sc">+</span> adherence <span class="sc">+</span> A1<span class="sc">*</span>A2 <span class="sc">+</span> </span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                                          A2<span class="sc">:</span>adherence, <span class="at">id =</span> ID, <span class="at">data =</span> .)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model2s)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+geepack::geeglm(formula = Y2 ~ odd.c + severity.c + priormed.c + 
+    race.c + adherence + A1 * A2 + A2:adherence, data = ., id = ID)
+
+ Coefficients:
+             Estimate  Std.err    Wald Pr(&gt;|W|)    
+(Intercept)   2.58822  0.17041 230.691  &lt; 2e-16 ***
+odd.c        -0.03427  0.23540   0.021 0.884263    
+severity.c   -0.45425  0.10492  18.744 1.50e-05 ***
+priormed.c   -0.92585  0.26401  12.298 0.000453 ***
+race.c        0.68020  0.28537   5.682 0.017145 *  
+adherence     0.45012  0.21538   4.368 0.036627 *  
+A1            0.35725  0.12158   8.634 0.003299 ** 
+A2           -1.10481  0.17432  40.169 2.33e-10 ***
+A1:A2         0.04936  0.11021   0.201 0.654217    
+adherence:A2  1.47727  0.22705  42.332 7.70e-11 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation structure = independence 
+Estimated Scale Parameters:
+
+            Estimate Std.err
+(Intercept)    1.017  0.1496
+Number of clusters:   92  Maximum cluster size: 1 </code></pre>
+</div>
+</div>
+<p>Here we find that <code>adherence</code> is a significant moderator of stage 2 treatment $A_2$, but <span class="math inline">\(A_1\)</span> is not. The sign on <span class="math inline">\(\beta_9\)</span> is positive, suggesting that those that are adherent would benefit from intensifying treatment (<span class="math inline">\(A_2 = 1\)</span>). Likewise, the sign of <span class="math inline">\(\beta_7\)</span> is negative suggesting those that are non-adherent would benefit from Augmenting (<span class="math inline">\(A_2 = -1\)</span>)</p>
+</section>
+<section id="interaction-plot-of-moderators-of-stage-2" class="level2">
+<h2 class="anchored" data-anchor-id="interaction-plot-of-moderators-of-stage-2">Interaction plot of moderators of stage 2</h2>
+<p>We will use a very powerful package called <code>emmeans</code> to estimate the marginal means given a set of factors</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#grid &lt;- emmeans::ref_grid(model2s, cov.keep = c("A1","A2", "adherence"))</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>em2 <span class="ot">&lt;-</span> emmeans<span class="sc">::</span><span class="fu">emmeans</span>(model2s, <span class="sc">~</span> A1 <span class="sc">+</span> A2 <span class="sc">|</span> adherence) <span class="co"># do we need weights=?</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>em2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>adherence = 0:
+ A1 A2 emmean    SE  df asymp.LCL asymp.UCL
+ -1 -1  2.993 0.346 Inf    2.3144      3.67
+  1 -1  3.609 0.254 Inf    3.1117      4.11
+ -1  1  0.685 0.344 Inf    0.0114      1.36
+  1  1  1.498 0.299 Inf    0.9127      2.08
+
+adherence = 1:
+ A1 A2 emmean    SE  df asymp.LCL asymp.UCL
+ -1 -1  1.966 0.298 Inf    1.3812      2.55
+  1 -1  2.582 0.284 Inf    2.0252      3.14
+ -1  1  2.612 0.268 Inf    2.0863      3.14
+  1  1  3.426 0.264 Inf    2.9081      3.94
+
+Results are averaged over the levels of: odd.c, priormed.c, race.c 
+Covariance estimate used: vbeta 
+Confidence level used: 0.95 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(em2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Q-learning_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>ep2 <span class="ot">&lt;-</span> emmeans<span class="sc">::</span><span class="fu">emmip</span>(em2, A1 <span class="sc">+</span> A2 <span class="sc">~</span> adherence, <span class="at">style =</span> <span class="st">"factor"</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>ep2<span class="sc">$</span>data <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, as.factor)) <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(xvar, yvar, <span class="at">color =</span> A1, <span class="at">linetype =</span> A2, <span class="at">group =</span> tvar)) <span class="sc">+</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="st">"A1"</span>, <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"-1"</span> <span class="ot">=</span> <span class="st">"red"</span>, <span class="st">"1"</span> <span class="ot">=</span> <span class="st">"blue"</span>), </span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"-1"</span> <span class="ot">=</span> <span class="st">"-1 MED"</span>, <span class="st">"1"</span> <span class="ot">=</span> <span class="st">"1 BMOD"</span>)) <span class="sc">+</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_linetype_manual</span>(<span class="st">"A2"</span>, <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"-1"</span> <span class="ot">=</span> <span class="dv">1</span>,<span class="st">"1"</span> <span class="ot">=</span> <span class="dv">3</span>), </span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                        <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"-1"</span> <span class="ot">=</span> <span class="st">"-1 AUG"</span>, <span class="st">"1"</span> <span class="ot">=</span> <span class="st">"1 INT"</span>)) <span class="sc">+</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Adherence"</span>) <span class="sc">+</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"School Performance"</span>) <span class="sc">+</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Q-learning_files/figure-html/unnamed-chunk-3-2.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

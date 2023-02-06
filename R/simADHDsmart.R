@@ -13,7 +13,7 @@
 #' @param U.params A vector specifying the normal distribution parameters `mu` and `sd`
 #' @param R.coef A named vector specifying the linear **probit model** coefficients for the probability of being a responder to first-stage treatment. Can be a function of any past variables.
 #' @param adherence.coef A named vector specifying the linear **probit model** coefficients for the probability of being adherent to first-stage treatment. Can be a function of any past variables.
-#' @param event_time.coef not implemented
+#' @param NRtime.coef not implemented
 #' @param Y1.coef A named vector of linear model coefficients specifying the first-stage treatment causal effect on \eqn{Y_1} school performance
 #' @param Y2.baseline A named vector of linear model coefficients specifying the baseline covariate associations on end-of-study \eqn{Y_2} school performance
 #' @param Y2.tx1 A named vector of linear model coefficients specifying the first-stage treatment causal effect on end-of-study \eqn{Y_2} school performance. Can be a function of any baseline moderators.
@@ -53,7 +53,7 @@
 #' ## Nuisance Associations
 #' -  `R`: positively associated with outcome
 #' -  `adherence`: positively associated with outcome
-#' -  `event-time`: or time to non-response has no effect
+#' -  `NRtime`: or time to non-response has no effect
 #'
 #' ## Second-Stage (among non-responders only):
 #' -  Marginally, `AUG(-1)` is better compared to `INT(1)`
@@ -77,7 +77,7 @@ simADHDsmart <- function(N = 150,
                          U.params = c(mu = 0, sd = 1), # do not change
                          R.coef = c(-0.4, A1 = -0.1, "priormed:A1" = -0.2, U = 0.2), # probit model
                          adherence.coef = c(-0.1, "priormed:A1" = -0.2, U = 0.1), # probit model
-                         event_time.coef = NULL,
+                         NRtime.coef = NULL,
                          Y1.coef = c(2.5, A1 = -0.3, U = 0.1),
                          Y2.baseline = c(3, odd = -0.3, severity = -0.4, priormed = 0, race = 0.5),
                          Y2.tx1 = c(A1 = 0.3, "priormed:A1" = -1.4),
@@ -181,10 +181,10 @@ adherence.c = adherence - ES # grand mean centered
 adherence.a1 = adherence - ES_a1(A1)
 
 ## Time to Non-response (Event-time) OC: No association for now
-event_time <- sample.int(8, N, replace = TRUE)  # uniform; for now
-event_time[R == 1] <- NA
+NRtime <- sample.int(8, N, replace = TRUE)  # uniform; for now
+NRtime[R == 1] <- NA
 
-H1.c <- dplyr::mutate(H1.c, R, R.resid, adherence = adherence.c, adherence.resid, event_time) # use grand mean centered Adherence!
+H1.c <- dplyr::mutate(H1.c, R, R.resid, adherence = adherence.c, adherence.resid, NRtime) # use grand mean centered Adherence!
 
 ## First-stage Outcome OC: Small change from baseline, Med (-1) is better initially
 Y1 <- linearMult(Y1.coef, H1.c) + rnorm(N, 0, sigma)
@@ -224,7 +224,7 @@ Y2 <- Y2 + rnorm(N, 0, sigma) # determine what error is needed for sig effects
 H3.c <- dplyr::mutate(H2.c, Y2)
 
 A2[R == 1] <- NA
-event_time[R == 1] <- NA
+NRtime[R == 1] <- NA
 
 
 # Compute Marginal Means --------------------------------------------------
@@ -241,7 +241,7 @@ getMarginalMeans <- function(a1, a2) {
   R.resid <- 0 # centered residuals
   R <- 0
   adherence <- ES_a1(a1) - ES # since we are grand mean centering all moderators, we need the expectation conditioned on A1... basically 0
-  event_time <- 0
+  NRtime <- 0
   U <- 0
 
   EH2.c <- data.frame(odd, severity, priormed, race, A1, U, R, R.resid, adherence, adherence.resid, A2)
@@ -255,7 +255,7 @@ DTRmeans <- expand.grid(a1 = c(-1,1), a2 = c(-1,1)) %>%
 
 data <- data.frame(ID = 1:N, odd = odd.nc, severity = severity.nc,
                    priormed = priormed.nc, race = race.nc, Y0,
-                   A1, R, event_time, adherence, Y1, A2, Y2)
+                   A1, R, NRtime, adherence, Y1, A2, Y2)
 return(list(data = data, DTRmeans = DTRmeans))
 
 }

@@ -1,0 +1,98 @@
+---
+title: "Q-learning Demo"
+format: html
+editor: visual
+---
+
+## Q-learning Demo using ADHD data
+
+This file provides example R code to analyze \*simulated\* data that was generated to mimic data arising from the ADHD SMART study (PI: William Pelham). An accompanying handout ("ADHD Handout.pdf") describes the variables in the data.
+
+## Setup
+
+```{r setup}
+#| echo: true
+#| results: hide
+#| warning: false
+
+library(CATIE2023)
+library(geepack)
+library(tidyverse)
+library(emmeans)
+```
+
+### Load data
+
+```{r}
+
+adhd <- CATIE2023::adhd
+
+# Fill NA with zero
+adhd[is.na(adhd)] <- 0
+
+# Grand mean center all covariates
+adhd.c <- adhd %>% mutate(across(c(odd, severity, priormed, race, adherence, NRtime),  ~ .x - mean(.x, na.rm = TRUE), .names = "{.col}.c"), )
+
+# Filter to non-responders, then center among non-responders
+adhd.nr.c <- adhd %>% filter(R == 0) %>%
+  mutate(across(.cols = c(2:5, NRtime, adherence), ~ .x - mean(.x), .names = "{.col}.c"))
+```
+
+## Examine moderators of second-stage treatment effect
+
+Remember that Step 1 of Q-learning is to understand how intermediate outcomes can be used to make second-stage decisions about intensifying vs. augmenting. Investigating potential moderators in this way will help us tailor the second-stage intervention for non-responders based on the status of the participants up to the point of non-response. We are only able to investigate non-responders since those were the only individuals who were re-randomized. Because all responders in this study continued on their first-stage intervention, we are unable to assess whether a different tactic would be better for some responders.
+
+We'll start by fitting a **moderated regression model** using the data from non-responders. The goal is to discover if we can use *the initial treatment* `a1` and *adherence to initial treatment* `adherence` to select a tactic for non-responders, adjusting for baseline covariates. The model is as follows:
+
+$$ \begin{gather} E[Y \mid \mathbf{X}, A_1, adherence, A_2, R = 0] = \beta_0 + \beta_1 odd_{cnr} + \beta_2 severity_{cnr} + \beta_3 priormed_{cnr} + \beta_4 race_{cnr}  \\+ \beta_5 A_{1} + \beta_6 adherence + \beta_7 A_2 + \beta_8 (A_2 \times A_1) + \beta_{9} (A_2 \times adherence)
+\end{gather}$$
+
+Pay particular attention to $\beta_5$, $\beta_6$, $\beta_8$, and $\beta_{9}$, as these represent the main effects and interactions (with second-stage intervention), respectively, of the two moderators we are interested in for this analysis. Let's fit the model:
+
+## Fit model to the subset of non-responders
+
+```{r}
+
+# Use the data set that mean centers among non responders, this gives main effects
+model2s <- adhd.nr.c %>%geepack::geeglm(Y2 ~ odd.c + severity.c + priormed.c 
+                                        + race.c + adherence + A1*A2 + 
+                                          A2:adherence, id = ID, data = .)
+
+summary(model2s)
+
+```
+
+Here we find that `adherence` is a significant moderator of stage 2 treatment \$A_2\$, but $A_1$ is not. The sign on $\beta_9$ is positive, suggesting that those that are adherent would benefit from intensifying treatment ($A_2 = 1$). Likewise, the sign of $\beta_7$ is negative suggesting those that are non-adherent would benefit from Augmenting ($A_2 = -1$)
+
+## Interaction plot of moderators of stage 2
+
+We will use a very powerful package called `emmeans` to estimate the marginal means given a set of factors
+
+```{r}
+
+#grid <- emmeans::ref_grid(model2s, cov.keep = c("A1","A2", "adherence"))
+em2 <- emmeans::emmeans(model2s, ~ A1 + A2 | adherence) # do we need weights=?
+
+ep2 <- emmeans::emmip(em2, A1 + A2 ~ adherence, style = "factor")
+ep2$data %>% mutate(across(1:3, as.factor)) %>%
+  ggplot(aes(xvar, yvar, color = A1, linetype = A2, group = tvar)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual("A1", values = c("-1" = "red", "1" = "blue"), 
+                     labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
+  scale_linetype_manual("A2", values = c("-1" = 1,"1" = 3), 
+                        labels = c("-1" = "-1 AUG", "1" = "1 INT")) +
+  xlab("Adherence") +
+  ylab("School Performance") +
+  theme_bw()
+```
+### Pairs of contrasts
+```{r}
+emmeans::contrast(em2, simple = "A2", method = "revpairwise")
+```
+
+
+
+## Q-learning
+
+control for optimal second-stage tactic

@@ -80,7 +80,7 @@ adhd <- CATIE2023::adhd
 trueDTRmeans <- CATIE2023::adhdDTRmeans
 
 # Fill NA with zero
-adhd[adhd$R == 1, "event_time"] <- 0
+adhd[adhd$R == 1, "NRtime"] <- 0
 adhd[adhd$R == 1, "A2"] <- 0
 ```
 
@@ -88,11 +88,11 @@ adhd[adhd$R == 1, "A2"] <- 0
 # Manipulate data.frame
 
 # Grand mean center covariates
-adhd.c <- adhd %>% mutate(across(c(2:5, adherence, event_time),  ~ .x - mean(.x, na.rm = TRUE), .names = "{.col}.c"), )
+adhd.c <- adhd %>% mutate(across(c(2:5, adherence, NRtime),  ~ .x - mean(.x, na.rm = TRUE), .names = "{.col}.c"), )
 
 # Center variables only among non-responders
 adhd.nr.c <- adhd %>% filter(R == 0) %>%
-  mutate(across(.cols = c(2:5, event_time, adherence), ~ .x - mean(.x), .names = "{.col}.c"))
+  mutate(across(.cols = c(2:5, NRtime, adherence), ~ .x - mean(.x), .names = "{.col}.c"))
 
 # Long format for plotting longitudinal outcome
 adhd.long <- pivot_longer(adhd, cols = c(Y0, Y1, Y2), names_to = "stage", 
@@ -179,7 +179,7 @@ adhd.long %>% filter(stage == 2) %>%
 
 # Covariates centered among non-responders
 model2 <- adhd.nr.c %>%geepack::geeglm(Y2 ~ A2 + odd.c + severity.c + priormed.c + 
-                                 race.c + event_time.c + adherence.c, id = ID, data = .)
+                                 race.c + NRtime.c + adherence.c, id = ID, data = .)
 summary(model2)
 
 estimate(model2,
@@ -267,7 +267,7 @@ First-stage effects will be biased Why do we subset to only non-responders? We l
 # should we use the df with the coeff centered by non-responders?
 # do we interact with the centered adherence.c?
 model2s.c <- adhd.nr.c %>%geepack::geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
-                                  event_time.c + adherence.c + 
+                                  NRtime.c + adherence.c + 
                                     A1*A2 + A2:adherence.c,
                                 id = ID, data = .)
 summary(model2s.c) #gives robust SE
@@ -279,7 +279,7 @@ summary(model2s.c) #gives robust SE
 
 
 model2s <- adhd.nr.c %>%geepack::geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c +
-                                  event_time.c + adherence + 
+                                  NRtime.c + adherence + 
                                   A1*A2 + A2:adherence,
                                 id = ID, data = .)
 
@@ -315,7 +315,7 @@ adhd.c.nr <- adhd.c %>% filter(R == 0)
 
 model2s <-  adhd.c.nr %>%
  geepack::geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c + 
-           event_time + adherence + A1*A2 + A2:adherence, 
+           NRtime + adherence + A1*A2 + A2:adherence, 
          id = ID, data = .)
 
 adhd.c.nr.alt <- adhd.c.nr %>% mutate(A2 = -1 * A2)
