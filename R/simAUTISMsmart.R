@@ -22,10 +22,12 @@
 #' @param sigma Gaussian noise added to \eqn{Y_{0,1,2}}
 #'
 #'
-#' @return A list with components
+#' @return A data.frame with attributes
 #' \describe{
-#'  \item{data}{data.frame of observed variables}
-#'  \item{DTRmean}{marginal embedded DTR means}
+#'  \item{simparams}{list of DGM coeffecients used in function call}
+#'  \item{dtrmeans}{marginal embedded DTR means}
+#'  \item{creator}{System USER who generated the data}
+#'  \item{time_created}{time of data realization}
 #'  }
 #'
 #' @details # Named Vectors
@@ -66,6 +68,8 @@ simAUTISMsmart <- function(N = 200,
                          Y2.tx2 = c(A2 = -4, "A2:O21" = 6), # residual centered covariates
                          sigma = 8) {
 
+# Save parameters of DGM
+simparams <- as.list(environment())
 
 # Generator functions -----------------------------------------------------
 O11_f <- function(N) {runif(N, baseline.params$O11[1], baseline.params$O11[2])}
@@ -151,7 +155,7 @@ EO21_a1r <- function(a1, r) {linearMult(O21.coef, data.frame(A1 = a1, R = r, U =
 EO21 <- O21.coef[1] # grand mean (if using centered coeffecients!)
 O21.c <- O21 - EO21
 
-H1.c <- dplyr::mutate(H0.c, A1, U, R = R.c, R.resid, O21 = O21.c, O21.resid) # use centered O21.c for O22
+H1.c <- dplyr::mutate(H0.c, A1, U, R = R.c, R.resid, O21 = O21.c, O21.resid) # use centered O21.c=
 
 ## O22
 O22e <- rnorm(N, 0, 17)
@@ -213,7 +217,16 @@ DTRmeans <- data.frame(a1 = c(1,1,-1), a2 = c(1,-1,0)) %>%
   dplyr::mutate(mean = getMarginalMeans(a1, a2))
 
 data <- data.frame(ID = 1:N, O11, O12, Y0, A1, R, O21, O22, Y1, A2, Y2)
-return(list(data = data, DTRmeans = DTRmeans))
+
+
+# Add meta data -----------------------------------------------------------
+
+attr(data, "creator") <- Sys.getenv("USER")
+attr(data, "time_created") <- Sys.time()
+attr(data, "simparams") <- simparams
+attr(data, "dtrmeans") <- DTRmeans
+
+return(data)
 
 }
 

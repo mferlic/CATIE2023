@@ -7,7 +7,7 @@
 estimate(fit, combos)
 }
 \arguments{
-\item{fit}{model object}
+\item{fit}{model object of class geepack or geem}
 
 \item{combos}{vector of linear combinations of parameter estimates.}
 }

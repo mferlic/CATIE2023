@@ -7,15 +7,15 @@
 simADHDsmart(
   N = 150,
   baseline.params = list(p.odd = 0.4, m.severity = 0, p.priormed = 0.3, p.race = 0.8),
-  Y0.coef = c(2, odd = -0.2, severity = -0.3),
+  Y0.coef = c(2, odd = -0.5, severity = -0.8),
   U.params = c(mu = 0, sd = 1),
-  R.coef = c(-0.4, A1 = -0.1, `priormed:A1` = -0.2, U = 0.2),
-  adherence.coef = c(-0.1, `priormed:A1` = -0.2, U = 0.1),
+  R.coef = c(-0.4, A1 = -0.1, `priormed:A1` = -0.2, U = 0.2, Y0 = 0.1),
+  adherence.coef = c(-0.1, `priormed:A1` = -0.2, U = 0.2),
   NRtime.coef = NULL,
-  Y1.coef = c(2.5, A1 = -0.3, U = 0.1),
-  Y2.baseline = c(3, odd = -0.3, severity = -0.4, priormed = 0, race = 0.5),
+  Y1.coef = c(2.5, A1 = -0.3, U = 0.9, Y0 = 0.6),
+  Y2.baseline = c(3, odd = -0.5, severity = -0.8, priormed = 0, race = 0.4),
   Y2.tx1 = c(A1 = 0.3, `priormed:A1` = -1.4),
-  Y2.n1 = c(R.resid = 0.8, adherence.resid = 1, U = 0.4),
+  Y2.n1 = c(R.resid = 0.8, adherence.resid = 1.2, U = 0.3, Y1.resid = 0.5),
   Y2.tx2 = c(A2 = -0.3, `A1:A2` = 0.1, `adherence:A2` = 1.2),
   sigma = 1
 )
@@ -48,10 +48,12 @@ simADHDsmart(
 \item{sigma}{gaussian noise added to \eqn{Y_{0,1,2}}}
 }
 \value{
-A list with components
+A data.frame with attributes
 \describe{
-\item{data}{data.frame of observed variables}
-\item{DTRmean}{marginal embedded DTR means}
+\item{simparams}{list of DGM coeffecients used in function call}
+\item{dtrmeans}{marginal embedded DTR means}
+\item{creator}{System USER who generated the data}
+\item{time_created}{time of data realization}
 }
 }
 \description{
@@ -67,12 +69,12 @@ All baseline and moderator variable are grand mean centered. The nuisance terms 
 \subsection{Default Structural Nested Mean Model:}{
 \subsection{School performance after first-stage}{
 
-\deqn{Y_{1}(a_1, a_2) = 2.5 - 0.3a_1 + 0.4U + \epsilon}
+\deqn{Y_{1,i}(a_1, a_2) = \eta_0 - \beta_1a_1 + \eta_2U_i + \eta_3Y_{0c}\epsilon_i}
 }
 
 \subsection{School performance after second-stage}{
 
-\deqn{Y_{2}(a_1, a_2) = 3 - 0.2odd - 0.3severity + 0*priormed + .5race + \\ (0.3 - 1.4priormed)a_1 + \\ 0.8R.resid(a_1, u) + 1 adherence.resid(a_1, u) \\ +(1-R)(-0.3 + 0.1a_1 + 1.2adherence)a_2 + 0.4U + \epsilon}
+\deqn{Y_{2,i}(a_1, a_2) = \eta_0 - \eta_1odd_c - \eta_2severity_c + \eta_3priormed_c + \eta_4race_c + \\ (\beta_1 - \beta_2priormed_c)a_1 + \\ \eta_5\tilde{R} + \eta_6 \tilde{Adh} + \eta_7\tilde{Y_1} \\ +(1-R)(\beta_3 + \beta_4a_1 + \beta_5Adh_c)a_2 + 0.4U + \epsilon_i}
 }
 
 }

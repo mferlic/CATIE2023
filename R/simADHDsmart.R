@@ -21,10 +21,12 @@
 #' @param Y2.tx2 A named vector of linear model coefficients specifying the second-stage treatment causal effect, among non-responders, on end-of-study \eqn{Y_2} school performance. Can be a function of any baseline moderators. NOTE: all moderators are grand mean centered
 #' @param sigma gaussian noise added to \eqn{Y_{0,1,2}}
 #'
-#' @return A list with components
+#' @return A data.frame with attributes
 #' \describe{
-#'  \item{data}{data.frame of observed variables}
-#'  \item{DTRmean}{marginal embedded DTR means}
+#'  \item{simparams}{list of DGM coeffecients used in function call}
+#'  \item{dtrmeans}{marginal embedded DTR means}
+#'  \item{creator}{System USER who generated the data}
+#'  \item{time_created}{time of data realization}
 #'  }
 #'
 #' @details # Named Vectors
@@ -35,9 +37,9 @@
 #'
 #' ## Default Structural Nested Mean Model:
 #' ### School performance after first-stage
-#' \deqn{Y_{1}(a_1, a_2) = 2.5 - 0.3a_1 + 0.4U + \epsilon}
+#' \deqn{Y_{1,i}(a_1, a_2) = \eta_0 - \beta_1a_1 + \eta_2U_i + \eta_3Y_{0c}\epsilon_i}
 #' ### School performance after second-stage
-#' \deqn{Y_{2}(a_1, a_2) = 3 - 0.2odd - 0.3severity + 0*priormed + .5race + \\ (0.3 - 1.4priormed)a_1 + \\ 0.8R.resid(a_1, u) + 1 adherence.resid(a_1, u) \\ +(1-R)(-0.3 + 0.1a_1 + 1.2adherence)a_2 + 0.4U + \epsilon}
+#' \deqn{Y_{2,i}(a_1, a_2) = \eta_0 - \eta_1odd_c - \eta_2severity_c + \eta_3priormed_c + \eta_4race_c + \\ (\beta_1 - \beta_2priormed_c)a_1 + \\ \eta_5\tilde{R} + \eta_6 \tilde{Adh} + \eta_7\tilde{Y_1} \\ +(1-R)(\beta_3 + \beta_4a_1 + \beta_5Adh_c)a_2 + 0.4U + \epsilon_i}
 #'
 #' ## Baseline Covariates:
 #' -  `odd`: binary, centered
@@ -73,20 +75,22 @@
 
 simADHDsmart <- function(N = 150,
                          baseline.params = list(p.odd = 0.4, m.severity = 0, p.priormed = 0.3, p.race = 0.8),
-                         Y0.coef = c(2, odd = -0.2, severity = -0.3),
+                         Y0.coef = c(2, odd = -0.5, severity = -0.8),
                          U.params = c(mu = 0, sd = 1), # do not change
-                         R.coef = c(-0.4, A1 = -0.1, "priormed:A1" = -0.2, U = 0.2), # probit model
-                         adherence.coef = c(-0.1, "priormed:A1" = -0.2, U = 0.1), # probit model
+                         R.coef = c(-0.4, A1 = -0.1, "priormed:A1" = -0.2, U = 0.2, Y0 = 0.1), # probit model
+                         adherence.coef = c(-0.1, "priormed:A1" = -0.2, U = 0.2), # probit model
                          NRtime.coef = NULL,
-                         Y1.coef = c(2.5, A1 = -0.3, U = 0.1),
-                         Y2.baseline = c(3, odd = -0.3, severity = -0.4, priormed = 0, race = 0.5),
+                         Y1.coef = c(2.5, A1 = -0.3, U = 0.9, Y0 = 0.6),
+                         Y2.baseline = c(3, odd = -0.5, severity = -0.8, priormed = 0, race = 0.4),
                          Y2.tx1 = c(A1 = 0.3, "priormed:A1" = -1.4),
-                         Y2.n1 = c(R.resid = 0.8, adherence.resid = 1 , U = 0.4),
+                         Y2.n1 = c(R.resid = 0.8, adherence.resid = 1.2, U = 0.3, Y1.resid = 0.5),
                          Y2.tx2 = c(A2 = -0.3, "A1:A2" = 0.1, "adherence:A2" = 1.2),
                          sigma = 1) {
 
+# Save parameters of DGM
+simparams <- as.list(environment())
 
-# Generator functions -----------------------------------------------------
+# Generator functions; centered -----------------------------------------------------
 odd_f <- function(N){rbinom(N, 1, baseline.params$p.odd) -  baseline.params$p.odd}
 severity_f <- function(N){rnorm(N, baseline.params$m.severity, 1) - baseline.params$m.severity}
 priormed_f <- function(N){rbinom(N, 1, baseline.params$p.priormed) - baseline.params$p.priormed}
@@ -119,7 +123,14 @@ sampleProbitMean <- function(named.coefs, N = 1e6) {
   priormed <- priormed_f(N)
   race <- race_f(N)
   U <- U_f(N)
+
   H <- data.frame(A1, odd, severity, priormed, race, U)
+  Y0.mean <- linearMult(Y0.coef, H)
+  Y0 <- Y0.mean + rnorm(N, 0, sigma)
+  Y0.c <- Y0 - Y0.coef[1]
+
+  H <- mutate(H, Y0 = Y0.c)
+
   lat <- linearMult(named.coefs, H) + rnorm(N)
   D <- as.numeric(lat > 0)
   data.frame(H, D)
@@ -138,7 +149,10 @@ race.nc <- race + baseline.params$p.race
 
 H0.c <- data.frame(odd, severity, priormed, race)
 
-Y0 <- linearMult(Y0.coef, H0.c) + rnorm(N, 0, sigma)
+Y0.mean <- linearMult(Y0.coef, H0.c)
+Y0 <- Y0.mean + rnorm(N, 0, sigma)
+Y0.resid <- Y0 - Y0.mean
+Y0.c <- Y0 - Y0.coef[1]
 
 # First-stage -------------------------------------------------------------
 #Med: -1, BMOD: 1
@@ -147,7 +161,7 @@ A1 <- A1_f(N)
 ## Unknown
 U <- U_f(N)
 
-H1.c <- dplyr::mutate(H0.c, A1, U)
+H1.c <- dplyr::mutate(H0.c, Y0 = Y0.c, A1, U)
 
 ## Response OC: Med (-1) positively associated with Response, priorMed + association
 ## R Probit model
@@ -187,9 +201,11 @@ NRtime[R == 1] <- NA
 H1.c <- dplyr::mutate(H1.c, R, R.resid, adherence = adherence.c, adherence.resid, NRtime) # use grand mean centered Adherence!
 
 ## First-stage Outcome OC: Small change from baseline, Med (-1) is better initially
-Y1 <- linearMult(Y1.coef, H1.c) + rnorm(N, 0, sigma)
+Y1.mean <- linearMult(Y1.coef, H1.c)
+Y1 <- Y1.mean + rnorm(N, 0, sigma)
+Y1.resid <- Y1 - Y1.mean
 
-H1.c <- dplyr::mutate(H1.c, Y1)
+H1.c <- dplyr::mutate(H1.c, Y1.resid)
 
 # Second-stage ------------------------------------------------------------
 
@@ -218,7 +234,7 @@ Y2 <- Y2 + n1
 tx2 <- (1 - R) * linearMult(Y2.tx2, H2.c)
 Y2 <- Y2 + tx2
 
-## Error
+## Add noise
 Y2 <- Y2 + rnorm(N, 0, sigma) # determine what error is needed for sig effects
 
 H3.c <- dplyr::mutate(H2.c, Y2)
@@ -239,24 +255,35 @@ getMarginalMeans <- function(a1, a2) {
   race <- 0
   adherence.resid <- 0 # centered residuals
   R.resid <- 0 # centered residuals
+  Y1.resid <- 0
+
   R <- 0
   adherence <- ES_a1(a1) - ES # since we are grand mean centering all moderators, we need the expectation conditioned on A1... basically 0
   NRtime <- 0
   U <- 0
 
-  EH2.c <- data.frame(odd, severity, priormed, race, A1, U, R, R.resid, adherence, adherence.resid, A2)
+  EH2.c <- data.frame(odd, severity, priormed, race, A1, U, R, R.resid, adherence, adherence.resid, Y1.resid, A2)
   DTR <- linearMult(Y2.baseline, EH2.c) + linearMult(Y2.tx1, EH2.c) + (1 - ER_a1(a1)) * linearMult(Y2.tx2, EH2.c)
   DTR
 }
 
 DTRmeans <- expand.grid(a1 = c(-1,1), a2 = c(-1,1)) %>%
   rowwise() %>%
-  dplyr::mutate(mean = getMarginalMeans(a1, a2))
+  mutate(mean = getMarginalMeans(a1, a2))
 
 data <- data.frame(ID = 1:N, odd = odd.nc, severity = severity.nc,
                    priormed = priormed.nc, race = race.nc, Y0,
                    A1, R, NRtime, adherence, Y1, A2, Y2)
-return(list(data = data, DTRmeans = DTRmeans))
+
+
+# Add meta data -----------------------------------------------------------
+
+attr(data, "creator") <- Sys.getenv("USER")
+attr(data, "time_created") <- Sys.time()
+attr(data, "simparams") <- simparams
+attr(data, "dtrmeans") <- DTRmeans
+
+return(data)
 
 }
 

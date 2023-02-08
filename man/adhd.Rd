@@ -40,12 +40,12 @@ All baseline and moderator variable are grand mean centered. The nuisance terms 
 \subsection{Default Structural Nested Mean Model:}{
 \subsection{School performance after first-stage}{
 
-\deqn{Y_{1}(a_1, a_2) = 2.5 - 0.3a_1 + 0.4U + \epsilon}
+\deqn{Y_{1,i}(a_1, a_2) = \eta_0 - \beta_1a_1 + \eta_2U_i + \eta_3Y_{0c}\epsilon_i}
 }
 
 \subsection{School performance after second-stage}{
 
-\deqn{Y_{2}(a_1, a_2) = 3 - 0.2odd - 0.3severity + 0*priormed + .5race + \\ (0.3 - 1.4priormed)a_1 + \\ 0.8R.resid(a_1, u) + 1 adherence.resid(a_1, u) \\ +(1-R)(-0.3 + 0.1a_1 + 1.2adherence)a_2 + 0.4U + \epsilon}
+\deqn{Y_{2,i}(a_1, a_2) = \eta_0 - \eta_1odd_c - \eta_2severity_c + \eta_3priormed_c + \eta_4race_c + \\ (\beta_1 - \beta_2priormed_c)a_1 + \\ \eta_5\tilde{R} + \eta_6 \tilde{Adh} + \eta_7\tilde{Y_1} \\ +(1-R)(\beta_3 + \beta_4a_1 + \beta_5Adh_c)a_2 + 0.4U + \epsilon_i}
 }
 
 }

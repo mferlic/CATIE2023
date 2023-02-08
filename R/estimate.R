@@ -4,22 +4,30 @@
 #' Defines a rough equivalent to proc genmod's estimate statement.
 #
 #'
-#' @param fit model object
+#' @param fit model object of class geepack or geem
 #' @param combos vector of linear combinations of parameter estimates.
 #'
 #' @return prints Coefmat
 #'
+#'
 #' @export
 #'
-
 estimate <- function(fit, combos) {
   # Compute the mean estimate
-  est <- combos %*% coef(fit)
+  est <- combos %*% as.matrix(coef(fit))
 
+  # Check fit class
   # Get the appropriate variance estimate
-  if (with(fit$geese, all(weights == 1) & max(clusz) == 1))
-    var <- fit$geese$vbeta.naiv
-  else var <- fit$geese$vbeta
+  if (is(fit, "geem")){
+    var <- as.matrix(fit$var)
+  } else if (is(fit, "geeglm")) {
+    if(with(fit$geese, all(weights == 1) & max(clusz) == 1)) {
+      var <- fit$geese$vbeta.naiv
+    } else {var <- fit$geese$vbeta}
+  } else {
+    stop("fit is not of class geeM or geeglm")
+  }
+
 
   # Compute standard error of mean estimate and confidence bounds
   se.est <- sqrt(diag(combos %*% var %*% t(combos)))
@@ -38,10 +46,21 @@ estimate <- function(fit, combos) {
 }
 
 
-# Define a print function for the "estimate" class created above
-print.estimate <- function(object, digits = 4, signif.stars = FALSE, ...) {
+# Define a print function for the "estimate" class
+#' print.estimate
+#'
+#' @param object of class "estimate"
+#' @param digits number of sig digits to display
+#' @param signif.stars show stars?
+#' @param ...
+#'
+#' @return printCoefmat
+#' @export
+#'
+print.estimate <- function(object, digits = 4, signif.stars = TRUE, ...) {
   ## print 4 decimal places by default, like SAS
-  printCoefmat(round(object, digits = digits), digits = digits + 1,
+  printCoefmat(object, digits = digits,
                signif.stars = signif.stars, has.Pvalue = TRUE,
                eps.Pvalue = 0.0001, ...)
 }
+

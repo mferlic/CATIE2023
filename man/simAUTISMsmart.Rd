@@ -48,10 +48,12 @@ simAUTISMsmart(
 \item{sigma}{Gaussian noise added to \eqn{Y_{0,1,2}}}
 }
 \value{
-A list with components
+A data.frame with attributes
 \describe{
-\item{data}{data.frame of observed variables}
-\item{DTRmean}{marginal embedded DTR means}
+\item{simparams}{list of DGM coeffecients used in function call}
+\item{dtrmeans}{marginal embedded DTR means}
+\item{creator}{System USER who generated the data}
+\item{time_created}{time of data realization}
 }
 }
 \description{

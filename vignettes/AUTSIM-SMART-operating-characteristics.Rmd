@@ -1,7 +1,7 @@
 ---
 title: "AUTSIM-SMART-operating-characteristics"
 output: 
-  rmarkdown::html_vignette:
+  rmarkdown::html_document:
     toc: true
     fig-width: 100%
 vignette: >
@@ -48,7 +48,7 @@ $$
 ```{r}
 
 autism <- CATIE2023::autism
-trueDTRmeans <- CATIE2023::autismDTRmeans
+trueDTRmeans <- attr(autism, "dtrmeans")
 
 # Fill NA with zero
 autism[is.na(autism)] <- 0
