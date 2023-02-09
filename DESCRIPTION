@@ -1,6 +1,6 @@
 Package: CATIE2023
 Title: Generate Synthetic SMART Data for CATIE 2023
-Version: 0.0.0.9000
+Version: 1.0.0
 Authors@R: 
     person("Mason", "Ferlic", , "mferlic@umich.edu", role = c("aut", "cre"))
 Description: Contains the synthetic ADHD and AUTISM SMART data sets with the desired operating characteristics for use with CATIE 2023. Also contains the data generating code along with any helper fucntions for the demo days.
