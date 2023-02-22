@@ -82,17 +82,129 @@ ep2$data %>% mutate(across(1:3, as.factor)) %>%
                      labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
   scale_linetype_manual("A2", values = c("-1" = 1,"1" = 3), 
                         labels = c("-1" = "-1 AUG", "1" = "1 INT")) +
-  xlab("Adherence") +
-  ylab("School Performance") +
-  theme_bw()
+  xlab("Levels of Adherence") +
+  ylab("EOS School Performance") +
+  labs(title = "Effect of stage 2 treatment by adherence among non-responders") +
+  theme_classic()
+
+ggsave("moderators_second_stage.png", width = 8, height = 6)
 ```
+
 ### Pairs of contrasts
+
+Here we contrast the effect of second stage tactic controlling for first-stage and levels of adherence.
+
 ```{r}
+
 emmeans::contrast(em2, simple = "A2", method = "revpairwise")
+
 ```
-
-
 
 ## Q-learning
 
-control for optimal second-stage tactic
+Here we find the optimal second-stage tactic given first-stage treatment and levels of adherence.
+
+```{r}
+
+## VERSION 2: Argmax of Expected Value
+
+# Using full centered dataset filter to non-responders
+adhd.c.nr <- adhd.c %>% filter(R == 0)
+
+# fit model to non-responders
+Qmod2s <-  adhd.c.nr %>%
+ geepack::geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c + 
+           adherence + A1*A2 + A2:adherence, 
+         id = ID, data = .)
+
+# Make conterfactual dataframe
+adhd.c.nr.alt <- adhd.c.nr %>% mutate(A2 = -1 * A2)
+adhd.c.nr.opt <- adhd.c.nr # dataframe to store optimal tactic
+adhd.c.nr.opt$Y2 <- fitted(Qmod2s)
+
+adhd.c.nr.alt$Y2 <- predict(Qmod2s, newdata = adhd.c.nr.alt) # predict response on counterfactual a2
+
+
+### greater of COUNTERFACTUAL or FITTED
+cf <- adhd.c.nr.alt$Y2 > adhd.c.nr.opt$Y2
+adhd.c.nr.opt[cf, ] <- adhd.c.nr.alt[cf, ]
+
+# Combine optimal non-responders with responders
+adhd.c.opt <- adhd.c %>% filter(R == 1) %>%
+  bind_rows(adhd.c.nr.opt)
+
+# Look at second stage only. First stage coeffs will be biased.
+summary(Qmod2s)
+```
+
+Now we fit a model for the first stage on the dataset with optimal second stage. Interact first stage treatment with levels of prior med.
+
+```{r}
+
+# Fit first-stage model on full dataset (controlling for optimal second-stage tactic)
+Qmod1s <- adhd.c.opt %>%geepack::geeglm(Y2 ~ odd.c + severity.c + priormed + race.c + A1 + A1:priormed, id = ID, data = .)
+summary(Qmod1s)
+```
+
+### Interaction plot of first-stage treatment options
+
+```{r}
+em1 <- emmeans::emmeans(Qmod1s, ~ A1 | priormed, weights = "equal")
+
+ep1 <- emmeans::emmip(em1, A1 ~ priormed, style = "factor")
+ep1 + scale_color_manual("A1", values = c("-1" = "red", "1" = "blue"), 
+                     labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
+  labs(x = "Levels of Prior Med", y = "EOS School Performance",
+       title = "Moderators of stage 1 treatment controlling for optimal stage 2") +
+  theme_classic()
+
+ggsave("optimal_first_stage.png", width = 8, height = 6)
+```
+
+## Qlaci Package
+
+```{r}
+#| warning: false
+#| include: false
+devtools::install_github("d3lab-isr/qlaci")
+
+
+```
+
+```{r}
+
+## contrast matrix - we must transpose this for qlaci
+c1 <-
+  rbind("Mean Y under bmod, prior med"          = c(1, rep(0, 3), 1,  1,  1),
+        "Mean Y under med, prior med"           = c(1, rep(0, 3), 1, -1, -1),
+        "Mean diff (bmod-med) for prior med"    = c(0, rep(0, 3), 0,  2,  2),
+        "Mean Y under bmod, no prior med"       = c(1, rep(0, 3), 0,  1,  0),
+        "Mean Y under med, no prior med"        = c(1, rep(0, 3), 0,  -1, 0),
+        "Mean diff (bmod-med) for no prior med" = c(0, rep(0, 3), 0,  2,  0))
+
+```
+
+```{r}
+
+q1 <- qlaci::qlaci(H10 = with(adhd.c, cbind(1, odd.c, severity.c, race.c, priormed)),
+                   H11 = with(adhd.c, cbind(A1 = 1, "A1:priormed" = priormed)),
+                   A1 = adhd.c$A1,
+                   Y1 = rep(0, nrow(adhd.c)), # set to zero for everyone; we care only about EOS outcome
+                   H20 = with(adhd.c, cbind(1, odd.c, severity.c, race.c, priormed, A1, adherence)),
+                   H21 = with(adhd.c, cbind(A2 = 1, "A1:A2" = A1, "A2:adherence" = adherence)),
+                   A2 = adhd.c$A2,
+                   Y2 = adhd.c$Y2,
+                   S = 1 - adhd.c$R,
+                   c1 = t(c1)
+)
+                   
+                   
+```
+
+Qlaci results
+
+```{r}
+# This seems to give results different than expected. Showing BMOD is always better...
+q1
+
+```

@@ -10,7 +10,7 @@ adhd <- simADHDsmart(N = 150,
                      NRtime.coef = NULL,
                      Y1.coef = c(2.5, A1 = -0.3, U = 0.9, Y0 = 0.6),
                      Y2.baseline = c(3, odd = -0.5, severity = -0.8, priormed = 0, race = 0.4),
-                     Y2.tx1 = c(A1 = 0.3, "priormed:A1" = -1.4),
+                     Y2.tx1 = c(A1 = 0.3, "priormed:A1" = -3),
                      Y2.n1 = c(R.resid = 0.8, adherence.resid = 1.2, U = 0.3, Y1.resid = 0.5),
                      Y2.tx2 = c(A2 = -0.3, "A1:A2" = 0.1, "adherence:A2" = 1.2),
                      sigma = 1)

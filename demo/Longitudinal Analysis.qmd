@@ -1,0 +1,167 @@
+---
+title: "Longitudinal Analysis"
+format: html
+editor: visual
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+
+```
+
+## Import Data
+
+```{r}
+adhd <-  CATIE2023::adhd
+
+# fill NA with zeros
+adhd[is.na(adhd)] <- 0
+```
+
+## Convert to Long Format
+
+The three $Y0, Y1, Y2$ columns will be pivoted to a single column $Y$ with a $t$ indicator column.
+
+```{r}
+
+# pivot wide data.frame to long
+adhdLong <- adhd %>% tidyr::pivot_longer(cols = c(Y0, Y1, Y2), 
+                                         names_to = "stage",
+                                         names_prefix = "Y",
+                                         values_to = "Y")
+# add month column
+adhdLong$t <- rep(c(0,2,8), nrow(adhd)) # months
+
+# add stage indicators
+adhdLong <- adhdLong %>% mutate(S1 = pmin(t,2))
+adhdLong <- adhdLong %>% mutate(S2 = (t-2)*(t>=2))
+
+```
+
+### Plot Longitudinal Outcome
+
+```{r}
+adhdLong %>% ggplot(aes(x = t, y = Y, group = ID)) +
+  geom_line(alpha = 0.2, color = "blue") +
+  labs(title = "Individual Longitudinal Outcome", x = "Months", y = "School Perfomance") +
+  theme_bw()
+```
+
+## Weight & Replicate Long Data
+
+```{r}
+
+# Weight; R == responder
+adhdLong <- adhdLong %>% mutate(w = if_else(R==1, 2, 4))
+
+# Replicate
+adhdLong_R <- adhdLong %>% filter(R == 1) %>% # responders
+  tidyr::uncount(2) %>% # duplicates each row
+  mutate(A2 = rep(c(-1,1), n()/2))
+
+# Recombine
+adhdLong_rep <- adhdLong %>% filter(R == 0) %>%
+  bind_rows(adhdLong_R)
+
+```
+
+## Fit Model
+
+### Stage Means
+
+```{r}
+
+# Means at each stage
+fit1 <- geepack::geeglm(Y ~ stage, data = adhdLong, id = ID)
+summary(fit1)
+```
+
+### Comparing embedded AIs on Longitudinal Outcome
+
+Use stage coding: time under each stage. There is a breakpoint at $t=2$
+
+| t   | S1  | S2  |
+|-----|-----|-----|
+| 0   | 0   | 0   |
+| 2   | 2   | 0   |
+| 8   | 2   | 6   |
+
+```{r}
+# replicated and weighted dataset
+fit2 <- geepack::geeglm(Y ~ S1/A1 + S2/(A1*A2), data = adhdLong_rep,
+                        weights = w,
+                        id = ID)
+summary(fit2)
+```
+
+Use a positive basis function
+
+$$
+(x-k)_{+} := \begin{cases}0, & \text { if } x<k \\ x-k, & \text { if } x \geq k\end{cases}
+$$
+
+```{r}
+
+# define basis function
+bp <- function(x, k, d = 1) {(x - k)^d * (x >= k)}
+
+fit3 <- geepack::geeglm(Y ~ bp(t, 0)/A1 + bp(t,2)/(A1*A2), data = adhdLong_rep,
+                        weights = w,
+                        id = ID)
+summary(fit3)
+```
+
+### Mean EOS Outcome under each AI
+
+```{r}
+# This uses orignal basis formulation
+mycontr <- function(a1, a2, t) {
+  s1 <- min(2,t)
+  s2 <- max(0, t-2)
+  c(1, s1, s2, s1*a1, s2*c(a1, a2, a1*a2))
+}
+
+# After stage 1
+estimate(fit2,
+         rbind(
+           # These statements get the mean under each AI
+           "Mean Y1: AI#1 (MED, AUGMENT)"  = mycontr(-1, -1, 2),
+           "Mean Y1: AI#2 (BMOD, AUGMENT)"   = mycontr(1, -1, 2),
+           "Mean Y1: AI#3 (MED, INTENSIFY)"  = mycontr(-1, 1, 2),
+           "Mean Y1: AI#4 (BMOD, INTENSIFY)" = mycontr(1, 1, 2)))
+
+# After stage 2
+estimate(fit2,
+         rbind(
+           # These statements get the mean under each AI 
+           "Mean Y2: AI#1 (MED, AUGMENT)"    = mycontr(-1, -1, 8),
+           "Mean Y2: AI#2 (BMOD, AUGMENT)"   = mycontr(1, -1, 8),
+           "Mean Y2: AI#3 (MED, INTENSIFY)"  = mycontr(-1, 1, 8),
+           "Mean Y2: AI#4 (BMOD, INTENSIFY)" = mycontr(1, 1, 8)))
+
+```
+
+IMO easier to use emmeans than estimate as we don't have to worry about specifying the contrast correctly.
+
+```{r}
+library(emmeans)
+# use constructed linear basis functions to plot continuous in t
+em <- emmeans::emmeans(fit3, ~ A1 + A2 | t, at = list(t = c(0,2,8)))
+summary(em)
+
+# Contrasts
+emmeans(fit3, ~ A1 + A2 | t, at = list(t = c(8))) %>% 
+  contrast("pairwise", adjust = NULL)
+
+# Plot Means
+emmeans::emmip(fit3, A1 + A2 ~ t, at = list(t = c(0,2,8)), CIs = FALSE) +
+  theme_bw()
+```
+
+## Area Under the Curve
+
+The area of each trapezoidal section is:
+
+$$
+Area_s = \frac{w}{2}(b_1 + b_2) = \frac{|S|}{2}(E[Y_{s-1}|a_1,a_2] + E[Y_{s}|a_1,a_2])
+$$
