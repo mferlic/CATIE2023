@@ -259,7 +259,7 @@ modelMM.adj <- adhd.rep %>%geepack::geeglm(Y2 ~ A1*A2 + odd.c + severity.c + pri
 summary(modelMM.adj)
 
 # Careful we specify contrasts correctly
-estimate(modelMM.adj,
+e <- estimate(modelMM.adj,
          rbind("Mean Y: AI#1 (MED, AUGMENT)"    = c(1, -1, -1, rep(0,4),  1),
                "Mean Y: AI#2 (BMOD, AUGMENT)"   = c(1,  1, -1, rep(0,4), -1),
                "Mean Y: AI#3 (MED, INTENSIFY)"  = c(1, -1,  1, rep(0,4), -1),
@@ -269,7 +269,7 @@ estimate(modelMM.adj,
                "Diff: AI#1 - AI#4"              = c(0, -2, -2, rep(0,4),  0),
                "Diff: AI#2 - AI#3"              = c(0,  2, -2, rep(0,4),  0),
                "Diff: AI#2 - AI#4"              = c(0,  0, -2, rep(0,4), -2),
-               "Diff: AI#3 - AI#4"              = c(0, -2,  0, rep(0,4), -2))) %>% print()
+               "Diff: AI#3 - AI#4"              = c(0, -2,  0, rep(0,4), -2)))
 
 ```
 
