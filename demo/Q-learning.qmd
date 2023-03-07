@@ -62,7 +62,7 @@ summary(model2s)
 
 ```
 
-Here we find that `adherence` is a significant moderator of stage 2 treatment \$A_2\$, but $A_1$ is not. The sign on $\beta_9$ is positive, suggesting that those that are adherent would benefit from intensifying treatment ($A_2 = 1$). Likewise, the sign of $\beta_7$ is negative suggesting those that are non-adherent would benefit from Augmenting ($A_2 = -1$)
+Here we find that `adherence` is a significant moderator of stage 2 treatment $A_2$, but $A_1$ is not. The sign on $\beta_9$ is positive, suggesting that those that are adherent would benefit from intensifying treatment ($A_2 = 1$). Likewise, the sign of $\beta_7$ is negative suggesting those that are non-adherent would benefit from Augmenting ($A_2 = -1$)
 
 ## Interaction plot of moderators of stage 2
 
@@ -204,7 +204,6 @@ q1 <- qlaci::qlaci(H10 = with(adhd.c, cbind(1, odd.c, severity.c, race.c, priorm
 Qlaci results
 
 ```{r}
-# This seems to give results different than expected. Showing BMOD is always better...
 q1
 
 ```

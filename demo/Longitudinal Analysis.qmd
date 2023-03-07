@@ -155,7 +155,15 @@ emmeans(fit3, ~ A1 + A2 | t, at = list(t = c(8))) %>%
 
 # Plot Means
 emmeans::emmip(fit3, A1 + A2 ~ t, at = list(t = c(0,2,8)), CIs = FALSE) +
-  theme_bw()
+  theme_classic() +
+  theme(text = element_text(size = 20), 
+        plot.caption = element_text(size = 10))  +
+  labs(title = "Longitudinal outcomes of the four embedded AIs",
+       x = "Months",
+       y = "School performance",
+       caption = "Transition knot at month 2")
+
+ggsave("longitudinal_outcome.png", width = 8, height = 6)
 ```
 
 ## Area Under the Curve
