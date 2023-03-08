@@ -25,7 +25,8 @@ library(emmeans)
 
 ```{r}
 
-adhd <- CATIE2023::adhd
+#adhd <- CATIE2023::adhd
+adhd <- CATIE2023::simADHDsmart()
 
 # Fill NA with zero
 adhd[is.na(adhd)] <- 0
@@ -166,7 +167,7 @@ ggsave("optimal_first_stage.png", width = 8, height = 6)
 ```{r}
 #| warning: false
 #| include: false
-devtools::install_github("d3lab-isr/qlaci")
+#devtools::install_github("d3lab-isr/qlaci")
 
 
 ```

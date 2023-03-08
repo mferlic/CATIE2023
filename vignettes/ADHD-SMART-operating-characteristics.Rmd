@@ -75,8 +75,10 @@ $$
 
 # Import Data
 ```{r}
-
+#set.seed(1234)
 adhd <- CATIE2023::adhd
+#adhd <- CATIE2023::simADHDsmart()
+
 trueDTRmeans <- attr(adhd, "dtrmeans")
 
 # Fill NA with zero
@@ -393,7 +395,7 @@ TO DO: calculate mean of more deeply tailored AI
 ### qlaci
 
 ```{r}
-devtools::install_github("d3lab-isr/qlaci")
+#devtools::install_github("d3lab-isr/qlaci")
 ## contrast matrix - we must transpose this for qlaci
 c1 <-
   rbind("Mean Y under bmod, prior med"          = c(1, rep(0, 3), 1,  1,  1),

@@ -12,7 +12,8 @@ library(ggplot2)
 ## Import Data
 
 ```{r}
-adhd <-  CATIE2023::adhd
+#adhd <-  CATIE2023::adhd
+adhd <- CATIE2023::simADHDsmart()
 
 # fill NA with zeros
 adhd[is.na(adhd)] <- 0

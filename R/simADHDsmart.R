@@ -74,25 +74,40 @@
 
 
 simADHDsmart <- function(N = 150,
-                         baseline.params = list(p.odd = 0.4, m.severity = 0, p.priormed = 0.3, p.race = 0.8),
-                         Y0.coef = c(2, odd = -0.5, severity = -0.8),
-                         U.params = c(mu = 0, sd = 1), # do not change
+                         baseline.params = list(p.odd = 0.4, m.severity = 5, p.priormed = 0.3, p.race = 0.8),
+                         Y0.coef = c(2, odd = -0.4, severity = -0.1, U = 0.1),
+                         U.params = c(mu = 0, sd = 1),
                          R.coef = c(-0.4, A1 = -0.1, "priormed:A1" = -0.2, U = 0.2, Y0 = 0.1), # probit model
                          adherence.coef = c(-0.1, "priormed:A1" = -0.2, U = 0.2), # probit model
                          NRtime.coef = NULL,
-                         Y1.coef = c(2.5, A1 = -0.3, U = 0.9, Y0 = 0.6),
-                         Y2.baseline = c(3, odd = -0.5, severity = -0.8, priormed = 0, race = 0.4),
-                         Y2.tx1 = c(A1 = 0.3, "priormed:A1" = -3),
-                         Y2.n1 = c(R.resid = 0.8, adherence.resid = 1.2, U = 0.3, Y1.resid = 0.5),
-                         Y2.tx2 = c(A2 = -0.3, "A1:A2" = 0.1, "adherence:A2" = 1.2),
-                         sigma = 1) {
+                         Y1.coef = c(2.5, A1 = -0.3, U = 0.5, Y0 = 0),
+                         Y2.baseline = c(3, odd = -0.5, severity = -0.1, priormed = 0, race = 0.4),
+                         Y2.tx1 = c(A1 = 0.5, "priormed:A1" = -2),
+                         Y2.n1 = c(R.resid = 1.2, adherence.resid = 0.8, U = 0.2, Y1.resid = 1.2),
+                         Y2.tx2 = c(A2 = -0.4, "A1:A2" = 0.1, "adherence:A2" = 1.2),
+                         sigma = 0.4,
+                         rho = 0.8) {
 
 # Save parameters of DGM
 simparams <- as.list(environment())
 
 # Generator functions; centered -----------------------------------------------------
 odd_f <- function(N){rbinom(N, 1, baseline.params$p.odd) -  baseline.params$p.odd}
-severity_f <- function(N){rnorm(N, baseline.params$m.severity, 1) - baseline.params$m.severity}
+
+# truncated gaussian: -5 to 5
+severity_f <- function(N){
+  tmp <- rep(0, N)
+  for (i in 1:N) {
+    while (TRUE) {
+      v <- rnorm(1, 0, 0.5) # draw from normal
+      if (v < 1 & v > -1) {break} # within bounds; hard coded
+    }
+    tmp[i] <- v
+  }
+  tmp <- tmp*5 # scale
+  return(tmp)
+}
+
 priormed_f <- function(N){rbinom(N, 1, baseline.params$p.priormed) - baseline.params$p.priormed}
 race_f <- function(N){rbinom(N, 1, baseline.params$p.race) - baseline.params$p.race}
 
@@ -136,6 +151,18 @@ sampleProbitMean <- function(named.coefs, N = 1e6) {
   data.frame(H, D)
 }
 
+ar1_cor <- function(n, rho) {
+  exponent <- abs(matrix(1:n - 1, nrow = n, ncol = n, byrow = TRUE) -
+                    (1:n - 1))
+  rho^exponent
+}
+
+
+# Error Term --------------------------------------------------------------
+
+SIGMA <- sigma^2*ar1_cor(3, rho)
+E <- MASS::mvrnorm(N, c(0, 0, 0), SIGMA)
+
 # Baseline Covariates -----------------------------------------------------
 # centered
 odd <- odd_f(N)
@@ -147,10 +174,13 @@ priormed.nc <- priormed + baseline.params$p.priormed
 race <- race_f(N)
 race.nc <- race + baseline.params$p.race
 
+## Unknown
+U <- U_f(N)
+
 H0.c <- data.frame(odd, severity, priormed, race)
 
 Y0.mean <- linearMult(Y0.coef, H0.c)
-Y0 <- Y0.mean + rnorm(N, 0, sigma)
+Y0 <- Y0.mean + E[,1]
 Y0.resid <- Y0 - Y0.mean
 Y0.c <- Y0 - Y0.coef[1]
 
@@ -158,10 +188,7 @@ Y0.c <- Y0 - Y0.coef[1]
 #Med: -1, BMOD: 1
 A1 <- A1_f(N)
 
-## Unknown
-U <- U_f(N)
-
-H1.c <- dplyr::mutate(H0.c, Y0 = Y0.c, A1, U)
+H1.c <- dplyr::mutate(H0.c, Y0 = Y0.resid, A1, U)
 
 ## Response OC: Med (-1) positively associated with Response, priorMed + association
 ## R Probit model
@@ -202,7 +229,7 @@ H1.c <- dplyr::mutate(H1.c, R, R.resid, adherence = adherence.c, adherence.resid
 
 ## First-stage Outcome OC: Small change from baseline, Med (-1) is better initially
 Y1.mean <- linearMult(Y1.coef, H1.c)
-Y1 <- Y1.mean + rnorm(N, 0, sigma)
+Y1 <- Y1.mean + E[, 2]
 Y1.resid <- Y1 - Y1.mean
 
 H1.c <- dplyr::mutate(H1.c, Y1.resid)
@@ -235,7 +262,7 @@ tx2 <- (1 - R) * linearMult(Y2.tx2, H2.c)
 Y2 <- Y2 + tx2
 
 ## Add noise
-Y2 <- Y2 + rnorm(N, 0, sigma) # determine what error is needed for sig effects
+Y2 <- Y2 + E[,3] # determine what error is needed for sig effects
 
 H3.c <- dplyr::mutate(H2.c, Y2)
 
