@@ -19,7 +19,8 @@
 #' @param Y2.tx1 A named vector of linear model coefficients specifying the first-stage treatment causal effect on end-of-study \eqn{Y_2} school performance. Can be a function of any baseline moderators.
 #' @param Y2.n1 A named vector of linear model coefficients specifying the nuisance associations on end-of-study \eqn{Y_2} school performance. Can be a function of any prior moderators. NOTE: must specify R.resid and adherence.resid which are the direct associations in the SNMM.
 #' @param Y2.tx2 A named vector of linear model coefficients specifying the second-stage treatment causal effect, among non-responders, on end-of-study \eqn{Y_2} school performance. Can be a function of any baseline moderators. NOTE: all moderators are grand mean centered
-#' @param sigma gaussian noise added to \eqn{Y_{0,1,2}}
+#' @param sigma gaussian standard deviation of error
+#' @param rho correlation for AR-1 noise between \eqn{Y_{0,1,2}}
 #'
 #' @return A data.frame with attributes
 #' \describe{
@@ -43,7 +44,7 @@
 #'
 #' ## Baseline Covariates:
 #' -  `odd`: binary, centered
-#' -  `severity`: standard normal
+#' -  `severity`: truncated normal, scaled between -5 to 5
 #' -  `priormed`: binary, centered
 #' -  `race`: binary, centered
 #' -  `U`: an unknown, common cause of `R`, `adherence`, `Y1`, and `Y2`. Induces collider bias if naively conditioning on the time-varying covariates.
@@ -77,14 +78,14 @@ simADHDsmart <- function(N = 150,
                          baseline.params = list(p.odd = 0.4, m.severity = 5, p.priormed = 0.3, p.race = 0.8),
                          Y0.coef = c(2, odd = -0.4, severity = -0.1, U = 0.1),
                          U.params = c(mu = 0, sd = 1),
-                         R.coef = c(-0.4, A1 = -0.1, "priormed:A1" = -0.2, U = 0.2, Y0 = 0.1), # probit model
+                         R.coef = c(-0.4, A1 = -0.3, "priormed:A1" = -0.2, U = 0.2, Y0 = 0.1), # probit model
                          adherence.coef = c(-0.1, "priormed:A1" = -0.2, U = 0.2), # probit model
                          NRtime.coef = NULL,
                          Y1.coef = c(2.5, A1 = -0.3, U = 0.5, Y0 = 0),
                          Y2.baseline = c(3, odd = -0.5, severity = -0.1, priormed = 0, race = 0.4),
-                         Y2.tx1 = c(A1 = 0.5, "priormed:A1" = -2),
-                         Y2.n1 = c(R.resid = 1.2, adherence.resid = 0.8, U = 0.2, Y1.resid = 1.2),
-                         Y2.tx2 = c(A2 = -0.4, "A1:A2" = 0.1, "adherence:A2" = 1.2),
+                         Y2.tx1 = c(A1 = 0.4, "priormed:A1" = -2),
+                         Y2.n1 = c(R.resid = 1, adherence.resid = 2, U = 0.2, Y1.resid = 1.2),
+                         Y2.tx2 = c(A2 = -0.3, "A1:A2" = 0.1, "adherence:A2" = 2),
                          sigma = 0.4,
                          rho = 0.8) {
 
@@ -222,7 +223,7 @@ adherence.c = adherence - ES # grand mean centered
 adherence.a1 = adherence - ES_a1(A1)
 
 ## Time to Non-response (Event-time) OC: No association for now
-NRtime <- sample.int(8, N, replace = TRUE)  # uniform; for now
+NRtime <- sample(2:8, N, replace = TRUE)  # uniform; for now
 NRtime[R == 1] <- NA
 
 H1.c <- dplyr::mutate(H1.c, R, R.resid, adherence = adherence.c, adherence.resid, NRtime) # use grand mean centered Adherence!

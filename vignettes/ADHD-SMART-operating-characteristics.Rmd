@@ -143,7 +143,7 @@ Main Effects
 
 ```{r}
 xtabs(~ R, adhd) %>% prop.table()
-xtabs( ~ A1 + R, adhd) %>% prop.table()
+xtabs( ~ A1 + R, adhd) %>% prop.table(margin = 1)
 xtabs( ~ R + A2, adhd) %>% prop.table()
 
 # test for Responder difference

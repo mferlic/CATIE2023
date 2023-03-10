@@ -6,18 +6,19 @@
 \usage{
 simADHDsmart(
   N = 150,
-  baseline.params = list(p.odd = 0.4, m.severity = 0, p.priormed = 0.3, p.race = 0.8),
-  Y0.coef = c(2, odd = -0.5, severity = -0.8),
+  baseline.params = list(p.odd = 0.4, m.severity = 5, p.priormed = 0.3, p.race = 0.8),
+  Y0.coef = c(2, odd = -0.4, severity = -0.1, U = 0.1),
   U.params = c(mu = 0, sd = 1),
   R.coef = c(-0.4, A1 = -0.1, `priormed:A1` = -0.2, U = 0.2, Y0 = 0.1),
   adherence.coef = c(-0.1, `priormed:A1` = -0.2, U = 0.2),
   NRtime.coef = NULL,
-  Y1.coef = c(2.5, A1 = -0.3, U = 0.9, Y0 = 0.6),
-  Y2.baseline = c(3, odd = -0.5, severity = -0.8, priormed = 0, race = 0.4),
-  Y2.tx1 = c(A1 = 0.3, `priormed:A1` = -2),
-  Y2.n1 = c(R.resid = 0.8, adherence.resid = 1.2, U = 0.3, Y1.resid = 0.5),
-  Y2.tx2 = c(A2 = -0.3, `A1:A2` = 0.1, `adherence:A2` = 1.2),
-  sigma = 1
+  Y1.coef = c(2.5, A1 = -0.3, U = 0.5, Y0 = 0),
+  Y2.baseline = c(3, odd = -0.5, severity = -0.1, priormed = 0, race = 0.4),
+  Y2.tx1 = c(A1 = 0.5, `priormed:A1` = -2),
+  Y2.n1 = c(R.resid = 1.2, adherence.resid = 0.8, U = 0.2, Y1.resid = 1.2),
+  Y2.tx2 = c(A2 = -0.4, `A1:A2` = 0.1, `adherence:A2` = 1.2),
+  sigma = 0.4,
+  rho = 0.8
 )
 }
 \arguments{
@@ -45,7 +46,9 @@ simADHDsmart(
 
 \item{Y2.tx2}{A named vector of linear model coefficients specifying the second-stage treatment causal effect, among non-responders, on end-of-study \eqn{Y_2} school performance. Can be a function of any baseline moderators. NOTE: all moderators are grand mean centered}
 
-\item{sigma}{gaussian noise added to \eqn{Y_{0,1,2}}}
+\item{sigma}{gaussian standard deviation of error}
+
+\item{rho}{correlation for AR-1 noise between \eqn{Y_{0,1,2}}}
 }
 \value{
 A data.frame with attributes
@@ -82,7 +85,7 @@ All baseline and moderator variable are grand mean centered. The nuisance terms 
 \subsection{Baseline Covariates:}{
 \itemize{
 \item \code{odd}: binary, centered
-\item \code{severity}: standard normal
+\item \code{severity}: truncated normal, scaled between -5 to 5
 \item \code{priormed}: binary, centered
 \item \code{race}: binary, centered
 \item \code{U}: an unknown, common cause of \code{R}, \code{adherence}, \code{Y1}, and \code{Y2}. Induces collider bias if naively conditioning on the time-varying covariates.
