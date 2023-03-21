@@ -15,7 +15,7 @@ This file provides example R code to analyze \*simulated\* data that was generat
 #| results: hide
 #| warning: false
 
-#library(CATIE2023)
+library(CATIE2023)
 library(geepack)
 library(tidyverse)
 library(emmeans)
@@ -75,20 +75,32 @@ We will use a very powerful package called `emmeans` to estimate the marginal me
 em2 <- emmeans::emmeans(model2s, ~ A1 + A2 | adherence) # do we need weights=?
 
 ep2 <- emmeans::emmip(em2, A1 + A2 ~ adherence, style = "factor")
-ep2$data %>% mutate(across(1:3, as.factor)) %>%
-  ggplot(aes(xvar, yvar, color = A1, linetype = A2, group = tvar)) +
-  geom_line() +
-  geom_point() +
-  scale_color_manual("A1", values = c("-1" = "red", "1" = "blue"), 
-                     labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
-  scale_linetype_manual("A2", values = c("-1" = 1,"1" = 3), 
-                        labels = c("-1" = "-1 AUG", "1" = "1 INT")) +
-  xlab("Levels of Adherence") +
-  ylab("EOS School Performance") +
-  labs(title = "Effect of stage 2 treatment by adherence among non-responders") +
-  theme_classic()
 
-ggsave("moderators_second_stage.png", width = 8, height = 6)
+
+mytheme <- theme_classic() + 
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=16),
+        legend.text = element_text(size=16),
+        legend.title = element_text(size=16),
+        plot.title = element_text(size=20))
+
+ep2$data %>% mutate(across(1:3, as.factor)) %>%
+  ggplot(aes(xvar, yvar, color = A2, linetype = A1, group = tvar)) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  scale_color_manual("A2", values = c("-1" = "darkgreen", "1" = "purple"), 
+                     labels = c("-1" = "-1 AUG", "1" = "1 INT")) +
+  scale_linetype_manual("A1", values = c("-1" = 1,"1" = 6), 
+                        labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
+  mytheme +
+  labs(title = "Effect of stage 2 treatment among non-responders by adherence",
+       x = "Adherence to stage 1",
+       y = "EOS School Performance \n (higher is better)") +
+  scale_x_discrete(labels = c("Non-adherent", "Adherent")) +
+  scale_y_continuous(n.breaks = 6)
+  
+
+ggsave("moderators_second_stage.pdf", width = 12, height = 6)
 ```
 
 ### Pairs of contrasts
@@ -153,13 +165,30 @@ summary(Qmod1s)
 em1 <- emmeans::emmeans(Qmod1s, ~ A1 | priormed, weights = "equal")
 
 ep1 <- emmeans::emmip(em1, A1 ~ priormed, style = "factor")
-ep1 + scale_color_manual("A1", values = c("-1" = "red", "1" = "blue"), 
-                     labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
-  labs(x = "Levels of Prior Med", y = "EOS School Performance",
-       title = "Moderators of stage 1 treatment controlling for optimal stage 2") +
-  theme_classic()
 
-ggsave("optimal_first_stage.png", width = 8, height = 6)
+# ep1 + scale_color_manual("A1", values = c("-1" = "red", "1" = "blue"), 
+#                      labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
+#   geom_line(size=1)
+#   mytheme +
+#   scale_size_manual(values = c(2,2)) +
+#   labs(title = "Moderators of stage 1 treatment controlling for optimal stage 2",
+#        x = "Levels of Adherence",
+#        y = "EOS School Performance \n (higher is better)")
+  
+ep1$data %>% mutate(across(1:2, as.factor)) %>%
+  ggplot(aes(xvar, yvar, color = A1, group = tvar)) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  scale_color_manual("A1", values = c("-1" = "red", "1" = "blue"), 
+                     labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
+  mytheme +
+  labs(title = "Moderators of stage 1 treatment controlling for optimal stage 2",
+       x = "Medication use in Prior year",
+       y = "EOS School Performance \n (higher is better)") +
+  scale_x_discrete(labels = c("No prior med", "Prior med")) +
+  scale_y_continuous(n.breaks = 6)
+
+ggsave("optimal_first_stage.pdf", width = 12, height = 6, )
 ```
 
 ## Qlaci Package
@@ -174,6 +203,8 @@ ggsave("optimal_first_stage.png", width = 8, height = 6)
 
 ```{r}
 
+pPM <- mean(adhd.c$priormed)
+
 ## contrast matrix - we must transpose this for qlaci
 c1 <-
   rbind("Mean Y under bmod, prior med"          = c(1, rep(0, 3), 1,  1,  1),
@@ -181,7 +212,8 @@ c1 <-
         "Mean diff (bmod-med) for prior med"    = c(0, rep(0, 3), 0,  2,  2),
         "Mean Y under bmod, no prior med"       = c(1, rep(0, 3), 0,  1,  0),
         "Mean Y under med, no prior med"        = c(1, rep(0, 3), 0,  -1, 0),
-        "Mean diff (bmod-med) for no prior med" = c(0, rep(0, 3), 0,  2,  0))
+        "Mean diff (bmod-med) for no prior med" = c(0, rep(0, 3), 0,  2,  0),
+        "Mean Y Optimal DTR"                    = c(1, rep(0, 3), pPM,  1-2*pPM, -pPM))
 
 ```
 
@@ -206,5 +238,5 @@ Qlaci results
 
 ```{r}
 q1
-
+q1$ci1 %>% kableExtra::kable(digits = 2, caption = "Estimated optimal AI tailoring on prior med and adherence")
 ```

@@ -272,7 +272,9 @@ e <- estimate(modelMM.adj,
                "Diff: AI#2 - AI#3"              = c(0,  2, -2, rep(0,4),  0),
                "Diff: AI#2 - AI#4"              = c(0,  0, -2, rep(0,4), -2),
                "Diff: AI#3 - AI#4"              = c(0, -2,  0, rep(0,4), -2)))
-print(e)
+print(e) 
+
+e[1:4,] %>% kableExtra::kable(caption = "Estimated means of the four embedded AIs", digits = 2)
 ```
 
 # Module 5 / DEMO 3
