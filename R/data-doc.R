@@ -8,8 +8,7 @@
 #' @format A data frame with 150 rows and 13 columns
 #' \describe{
 #'    \item{ID}{numeric id}
-#'    \item{odd}{ODD diagnosis, reflecting whether the child was (coded as 1) or was not (coded as 0)
-#'    diagnosed with ODD (oppositional defiant disorder) before the first-stage intervention.}
+#'    \item{odd}{ODD (oppositional defiant disorder) diagnosis, reflecting whether the child was (coded as 1) or was not (coded as 0) diagnosed with ODD before the first-stage intervention.}
 #'    \item{severity}{ADHD score, reflecting ADHD symptoms at
 #'    the end of the previous school year (larger values reflect greater symptoms). Range 0-10.
 #'    \item{priormed}{medication prior to first-stage intervention, reflecting whether the child did
@@ -17,7 +16,7 @@
 #'    \item{race}{race variable: white (coded 1) versus non-white (coded 0).}
 #'    \item{Y0}{baseline school performance (higher values reflect better performance).}
 #'    \item{A1}{stage 1 treatment assignment. A1 = -1 if the first stage intervention was Medication;
-#'    A2 = 1 if the first stage intervention was Behavioral Intervention.}
+#'    A1 = 1 if the first stage intervention was Behavioral Intervention.}
 #'    \item{R}{response status. R = 0 if participant did not respond to the first stage intervention; R= 1 if he or she responded.}
 #'    \item{NRtime}{number of months until non-response. Range 2-8.}
 #'    \item{adherence}{adherence to the stage 1 intervention: whether the child did (coded as 1) or did not (coded as 0) show high adherence to initial treatment.}

@@ -1,0 +1,262 @@
+---
+title: "V2: Secondary Aims Analysis"
+author: "Using moderators and Q-learning for more deeply-tailored AI"
+format: 
+  revealjs: 
+    footer: March 2023
+    df-print: kable
+    code-overflow: wrap
+    code-line-numbers: true
+editor: visual
+---
+
+## Learning Goals
+
+Learn how to examine moderators of first and second-stage treatment effects
+
+-   Test moderator for significance
+
+-   Interaction plot to determine if moderator is useful tailoring variable
+
+Learn how Q-learning works
+
+-   Implement using the R Package `qlaci`
+
+## Outline
+
+1.  **Review more deeply-tailored AI**
+2.  Review moderators analysis
+3.  Conduct moderators analysis on the ADHD dataset
+4.  Q-learning: evaluate a more-deeply tailored AI
+
+## Review: what is a more deeply-tailored AI?
+
+-   A more deeply-tailored AI is an adaptive intervention that
+
+    -   includes additional tailoring variables in the decision rules
+
+    -   leads to better outcomes
+
+For example, an AI that tailors second-stage treatment based on response status and other collected variables, such as adherence
+
+## Review: what is a more deeply-tailored AI?
+
+![A more deeply tailored AI for ADHD in children](assets/deeplytailoredAI.png){fig-align="center"}
+
+## Secondary aims related to AIs
+
+We might be interested in investigating:
+
+1.  If stage 1 of the intervention should be tailored based on whether the child was previously prescribed medication (`priormed`).
+2.  Among non-responders, should stage 2 be tailored according to the child's `adherence` to the first stage.
+
+## Outline
+
+1.  Review more deeply-tailored AI
+2.  **Review moderators analysis**
+3.  Conduct moderators analysis on the ADHD dataset
+4.  Q-learning: evaluate a more-deeply tailored AI
+
+## Review: what is moderator analysis?
+
+-   A moderator is a variable that influences the causal effects of a treatment on an outcome.
+
+-   Moderators can be useful to determine how to tailor an intervention (who/what/when).
+
+    ![X moderates the causal effect of A on Y](assets/moderatorDAG.png)
+
+## Not all moderators are tailoring variables
+
+![X is NOT a moderator; X is NOT useful for tailoring](assets/not_moderator.png)
+
+## Not all moderators are tailoring variables
+
+![X is a moderator; X is NOT useful for tailoring](assets/moderator.png)
+
+## Not all moderators are tailoring variables
+
+![X is a moderator; X is useful for tailoring](assets/moderator_tailoring.png)
+
+## Moderator analysis in the ADHD SMART requires two stages
+
+1.  Prior to stage 1 intervention: does medication use in the prior year moderate the effect of starting with MED vs. BMOD?
+2.  Prior to stage 2 intervention: does level of adherence to first-stage moderate the effect of AUG vs INT among non-responders?
+
+::: callout-warning
+Temporal ordering is important. A moderator cannot occur after the intervention assignment.
+:::
+
+## Outline
+
+1.  Review more deeply-tailored AI
+2.  Review moderators analysis
+3.  **Conduct moderators analysis on the ADHD dataset**
+4.  Q-learning: evaluate a more-deeply tailored AI
+
+# Time for some code!
+
+## Setup
+
+Load required packages (these should be installed if you ran the setup script!)
+
+```{r}
+#| echo: true
+#| results: hide
+#| warning: false
+
+library(CATIE2023)
+library(geepack)
+library(tidyverse)
+library(emmeans)
+```
+
+## Load and transform data
+
+```{r}
+#| echo: true
+#| code-line-numbers: ""
+# Load data
+adhd <- CATIE2023::adhd
+
+# Fill NA's with zero
+adhd[is.na(adhd)] <- 0
+```
+
+## Examine data
+
+```{r}
+#| echo: true
+#| tbl-cap: "ADHD data.frame"
+#| out-width: 80%
+knitr::kable(adhd, digits = 2)
+```
+
+## Moderators of stage 1 main effect
+
+We can use the following regression to examine whether baseline variable `priormed` is a moderator of first-stage treatment $A_1$ controlling for other covariates $\mathbf{X}$
+
+$$
+E[Y_2 \mid \mathbf{X}_c, \text{priormed}, A_1] = \beta_0 + 
+\beta^TX_c + \beta_1\text{priormed} + \\ 
+\beta_2A_1 + \beta_3(A_1 \times \text{priormed})
+$$
+
+## 
+
+```{r}
+#| echo: true
+# Fit a linear model to test if priormed moderates A1
+
+# Grand mean center all covariates, append '.c' for centered
+adhd.c <- adhd %>% mutate(across(c(odd, severity, priormed, race, adherence, NRtime),  ~ .x - mean(.x), .names = "{.col}.c"), )
+
+mod1 <- geepack::geeglm(Y2 ~ odd.c + severity.c + race.c + priormed + A1 + priormed:A1, data = adhd.c, id = ID)
+```
+
+```{r}
+tidy(mod1) 
+```
+
+Here we find that the interaction term is significant, indicating that `priormed` is a moderator of stage 1 treatment.
+
+## Marginal means of stage 1
+
+We will use a very powerful package called `emmeans` to estimate the marginal means given a set of factors. \*Use estimate function instead??
+
+```{r}
+#| echo: true
+em1 <- emmeans::emmeans(mod1, ~ A1 | priormed)
+print(em1)
+```
+
+## Interaction plot of stage 1
+
+We can also plot the estimated marginal means using the `emmeans` package
+
+```{r}
+#| echo: true
+ep1 <- emmeans::emmip(em1, A1 ~ priormed, style = "factor")
+```
+
+```{r}
+ep1 + theme_classic() +
+  labs(title = "Priormed moderates stage 1 effects",
+       y = "EOS School Performance (higher is better)") +
+  scale_x_discrete(labels = c("No Prior Med", "Prior Med")) +
+  scale_color_manual("A1", 
+                     values = c("-1" = "red", "1" = "blue"),
+                     labels = c("-1" = "-1 MED", "1" = "1 BMOD"))
+```
+
+## Moderators of stage 2
+
+For stage 2, we fit a moderated regression model to *non-responders only*
+
+$$
+\begin{gather*} 
+E[Y \mid \mathbf{X}_c, A_1, \text{adherence}, A_2, R = 0] = \beta_0 + \beta^T\mathbf{X}_c + \beta_1 A_{1} + \beta_2\text{adherence} + \beta_3 A_2 + \\ 
+\beta_4 (A_2 \times A_1) + \beta_{5} (A_2 \times \text{adherence})
+\end{gather*}
+$$
+
+## 
+
+```{r}
+#| echo: true
+# Filter to non-responders, then center among non-responders
+adhd.nr.c <- adhd %>% filter(R == 0) %>%
+  mutate(across(.cols = c(odd, severity, priormed, race, NRtime, adherence), ~ .x - mean(.x), .names = "{.col}.c"))
+
+mod2 <- geepack::geeglm(Y2 ~ odd.c + severity.c + priormed.c + race.c + adherence + A1*A2 + A2:adherence, id = ID, data = adhd.nr.c)
+```
+
+```{r}
+tidy(mod1) 
+```
+
+Here we find that `adherence` is a significant moderator of stage 2 treatment $A_2$, but $A_1$ is not.
+
+## Marginal means of stage 2
+
+```{r}
+#| echo: true
+em2 <- emmeans::emmeans(mod2, ~ A1 + A2 | adherence)
+em2
+```
+
+## Interaction plot of stage 2
+
+```{r}
+#| echo: true
+ep2 <- emmeans::emmip(em2, A1 + A2 ~ adherence, style = "factor")
+```
+
+```{r}
+ep2$data %>% mutate(across(1:3, as.factor)) %>%
+  ggplot(aes(xvar, yvar, color = A2, linetype = A1, group = tvar)) +
+  geom_line() +
+  geom_point() +
+  scale_color_manual("A2", values = c("-1" = "darkgreen", "1" = "purple"), 
+                     labels = c("-1" = "-1 AUG", "1" = "1 INT")) +
+  scale_linetype_manual("A1", values = c("-1" = 1,"1" = 6), 
+                        labels = c("-1" = "-1 MED", "1" = "1 BMOD")) +
+  labs(title = "Adherence moderates stage 2 effects",
+       x = "Adherence to stage 1",
+       y = "EOS School Performance \n (higher is better)") +
+  scale_x_discrete(labels = c("Non-adherent", "Adherent")) +
+  theme_classic()
+```
+
+## What do these moderator analyses tell us?
+
+1.  Prior med is a useful tailoring variable for first stage
+2.  Adherence is a useful tailoring variable for second stage
+
+Now we want to estimate a more deeply-AI that combines both tactics!
+
+## Outline
+
+1.  Review more deeply-tailored AI
+2.  Review moderators analysis
+3.  Conduct moderators analysis on the ADHD dataset
+4.  **Q-learning: evaluate a more-deeply tailored AI**

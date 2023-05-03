@@ -26,7 +26,6 @@ library(emmeans)
 ```{r}
 
 adhd <- CATIE2023::adhd
-#adhd <- CATIE2023::simADHDsmart()
 
 # Fill NA with zero
 adhd[is.na(adhd)] <- 0
@@ -153,7 +152,6 @@ summary(Qmod2s)
 Now we fit a model for the first stage on the dataset with optimal second stage. Interact first stage treatment with levels of prior med.
 
 ```{r}
-
 # Fit first-stage model on full dataset (controlling for optimal second-stage tactic)
 Qmod1s <- adhd.c.opt %>%geepack::geeglm(Y2 ~ odd.c + severity.c + priormed + race.c + A1 + A1:priormed, id = ID, data = .)
 summary(Qmod1s)
@@ -202,8 +200,10 @@ ggsave("optimal_first_stage.pdf", width = 12, height = 6, )
 ```
 
 ```{r}
-
 pPM <- mean(adhd.c$priormed)
+
+# Mean of optimal dtr
+#contrast(qem1, list(opt.dtr = c(0, 1-pPM, pPM, 0)), by = NULL) %>% confint()
 
 ## contrast matrix - we must transpose this for qlaci
 c1 <-
